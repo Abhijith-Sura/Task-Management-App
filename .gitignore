@@ -1,0 +1,45 @@
+# 🔥 Node modules (VERY IMPORTANT)
+node_modules/
+**/node_modules/
+
+# 🔐 Environment variables
+.env
+.env.*
+**/.env
+
+# 🏗 Build folders
+build/
+dist/
+**/build/
+**/dist/
+
+# 📦 Logs
+logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# 🧪 Coverage
+coverage/
+**/coverage/
+
+# 🧠 OS files
+.DS_Store
+Thumbs.db
+
+# 🧑‍💻 IDE files
+.vscode/
+.idea/
+
+# 🗂 Optional cache
+.cache/
+.parcel-cache/
+
+# 🔥 Next.js / Vite (if used)
+.next/
+out/
+.vite/
+
+# 🔑 Misc
+*.local

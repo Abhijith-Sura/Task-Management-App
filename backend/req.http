@@ -1,0 +1,110 @@
+@baseUrl = http://localhost:5000
+@token = eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjY5YjdjMjQyYjhmMGExOWRhMDU5NTNiMiIsImlhdCI6MTc3MzY1MzgxMiwiZXhwIjoxNzc0MjU4NjEyfQ.fRqcIIX7wCtgRAmzo6rKUZZrfZuuOgzxCfAGAKiyQI0
+@boardId = 69b7a32bd4f1b066b12a19bf
+
+
+### Register
+POST {{baseUrl}}/api/auth/register
+Content-Type: application/json
+
+{
+    "name": "Manasa",
+    "email": "manasa@gmail.com",
+    "password": "123456"
+}
+
+
+### Login
+POST {{baseUrl}}/api/auth/login
+Content-Type: application/json
+
+{
+    "email": "manasa@gmail.com",
+    "password": "123456"
+}
+
+
+### Create Board
+POST {{baseUrl}}/api/boards
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjY5YjdkNzU4NjU4OGY3Y2JkMzY1MGZmOCIsImlhdCI6MTc3MzY1NTkwNiwiZXhwIjoxNzc0MjYwNzA2fQ.jA2mGV8B9_onxlgFNdaIzNsmnTi_6kJ2cAL4djDfkvA
+Content-Type: application/json
+
+{
+    "title": "Project Board"
+}
+-----
+
+### Get Boards
+GET {{baseUrl}}/api/boards
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjY5YjdjMjQyYjhmMGExOWRhMDU5NTNiMiIsImlhdCI6MTc3MzY1MDUyMiwiZXhwIjoxNzc0MjU1MzIyfQ.rTBGmF5M2gs_LNRiFAZ-5RaFk9W45wyIM4ZkMV11o-0
+
+
+### Create List
+POST http://localhost:5000/api/lists
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjY5YjdhMzAyZDRmMWIwNjZiMTJhMTliYyIsImlhdCI6MTc3MzY0MjUwNywiZXhwIjoxNzc0MjQ3MzA3fQ.GvSr9ZZXZq4yN9fH4k0cyJSBmOGUNddk4CyWsGUKvFc
+Content-Type: application/json
+
+{
+  "title": "Todo",
+  "boardId": "69b7a32bd4f1b066b12a19bf"
+}
+
+### Get Lists
+GET http://localhost:5000/api/lists/69b7a32bd4f1b066b12a19bf
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjY5YjdjMjQyYjhmMGExOWRhMDU5NTNiMiIsImlhdCI6MTc3MzY1MDUyMiwiZXhwIjoxNzc0MjU1MzIyfQ.rTBGmF5M2gs_LNRiFAZ-5RaFk9W45wyIM4ZkMV11o-0
+
+
+
+### Create Card
+POST http://localhost:5000/api/cards
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjY5YjdjMjQyYjhmMGExOWRhMDU5NTNiMiIsImlhdCI6MTc3MzY1MDUyMiwiZXhwIjoxNzc0MjU1MzIyfQ.rTBGmF5M2gs_LNRiFAZ-5RaFk9W45wyIM4ZkMV11o-0
+Content-Type: application/json
+
+{
+  "title": "Design Login Page",
+  "description": "Create UI for login",
+  "listId": "69b7bd4479e0ce4d8299385b"
+}
+
+
+### Get Cards
+GET http://localhost:5000/api/cards/69b7bd4479e0ce4d8299385b
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjY5YjdjMjQyYjhmMGExOWRhMDU5NTNiMiIsImlhdCI6MTc3MzY1MDUyMiwiZXhwIjoxNzc0MjU1MzIyfQ.rTBGmF5M2gs_LNRiFAZ-5RaFk9W45wyIM4ZkMV11o-0
+
+
+### Move Card
+PUT http://localhost:5000/api/cards/move
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjY5YjdjMjQyYjhmMGExOWRhMDU5NTNiMiIsImlhdCI6MTc3MzY1MzgxMiwiZXhwIjoxNzc0MjU4NjEyfQ.fRqcIIX7wCtgRAmzo6rKUZZrfZuuOgzxCfAGAKiyQI0
+Content-Type: application/json
+
+{
+  "cardId": "69b7c3c0b8f0a19da05953bd",
+  "newListId": "69b7bd4479e0ce4d8299385b"
+}
+
+
+### Invite Member
+PUT http://localhost:5000/api/boards/invite
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjY5YjdjMjQyYjhmMGExOWRhMDU5NTNiMiIsImlhdCI6MTc3MzY1MzgxMiwiZXhwIjoxNzc0MjU4NjEyfQ.fRqcIIX7wCtgRAmzo6rKUZZrfZuuOgzxCfAGAKiyQI0
+Content-Type: application/json
+
+{
+  "boardId": "69b7c27fb8f0a19da05953b5",
+  "email": "sanjana@gmail.com"
+}
+
+###upload file 
+POST http://localhost:5000/api/cards/upload
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjY5YjdjMjQyYjhmMGExOWRhMDU5NTNiMiIsImlhdCI6MTc3MzY1MzgxMiwiZXhwIjoxNzc0MjU4NjEyfQ.fRqcIIX7wCtgRAmzo6rKUZZrfZuuOgzxCfAGAKiyQI0
+Content-Type: multipart/form-data; boundary=----WebKitFormBoundary7MA4YWxkTrZu0gW
+
+------WebKitFormBoundary7MA4YWxkTrZu0gW
+Content-Disposition: form-data; name="file"; filename="test.png"
+Content-Type: image/png
+
+< C:/Users/sanja/OneDrive/Desktop/test.png
+------WebKitFormBoundary7MA4YWxkTrZu0gW
+Content-Disposition: form-data; name="cardId"
+
+69b7d1e8a6ca1a8d23228652
+------WebKitFormBoundary7MA4YWxkTrZu0gW--
