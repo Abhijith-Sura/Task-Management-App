@@ -1,28 +1,23 @@
-# 🌌 Zenith Workspace — Enterprise Task Management Platform
+# Zenith Workspace - Enterprise Task Management Platform
 
-[![MERN Stack](https://img.shields.io/badge/Stack-MERN-blue.svg?style=for-the-badge)](https://mongodb.com)
-[![WebSocket Sync](https://img.shields.io/badge/Realtime-WebSockets-orange.svg?style=for-the-badge)](https://socket.io)
-[![AI Orchestrated](https://img.shields.io/badge/AI-Gemini%20%7C%20Grok%20%7C%20Groq-purple.svg?style=for-the-badge)](https://deepmind.google/technologies/gemini/)
-[![CORS Guarded](https://img.shields.io/badge/Security-CORS%20Gated-success.svg?style=for-the-badge)](#)
+Zenith Workspace is an enterprise-grade, high-fidelity collaboration and task management platform built on the MERN (MongoDB, Express, React, Node.js) stack. The system is designed with a luxury glassmorphic design language, real-time collaboration engines, dual-stage security authorization, and pluggable Large Language Model (LLM) copilot assistants.
 
-Zenith Workspace is an enterprise-grade, high-fidelity collaboration and task management system built on the MERN stack. Designed with a luxury glassmorphic design language, Zenith implements state-of-the-art real-time collaboration engines, dual-stage security authorization (JWT + REST OTP), and pluggable LLM copilots.
+This document serves as the master guide for the entire project, explaining the architecture, core execution flows, database schema relationships, and deployment pipelines.
 
 ---
 
-## 📐 System Architecture
+## System Architecture
 
 Zenith separates client-side presentation from backend state operations, syncing updates instantly across active collaborative nodes.
 
 ```mermaid
 graph TD
-    %% Styling Classes
     classDef client fill:#3b82f6,stroke:#1d4ed8,stroke-width:2px,color:#fff;
     classDef backend fill:#10b981,stroke:#047857,stroke-width:2px,color:#fff;
     classDef database fill:#f59e0b,stroke:#b45309,stroke-width:2px,color:#fff;
     classDef external fill:#8b5cf6,stroke:#6d28d9,stroke-width:2px,color:#fff;
 
-    %% Frontend Stack
-    subgraph Client ["🎨 React SPA client (Vercel Edge)"]
+    subgraph Client ["React SPA client (Vercel Edge)"]
         SPA["React 19 + Vite SPA"]
         RQ["TanStack React Query Cache"]
         SIOC["Socket.io-client Presence"]
@@ -33,8 +28,7 @@ graph TD
     end
     class Client,SPA,RQ,SIOC,FM client;
 
-    %% Backend Gateway
-    subgraph Backend ["⚙️ Express Core App Container (Render Node)"]
+    subgraph Backend ["Express Core App Container (Render Node)"]
         RT["Express Router Gateway"]
         Auth["JWT Token Verify Middleware"]
         SIOS["Socket.io Event Broker"]
@@ -47,19 +41,17 @@ graph TD
     end
     class Backend,RT,Auth,SIOS,Controllers,AIService backend;
 
-    %% Data & External Layers
-    subgraph Data ["🗄️ Persistence Layer"]
+    subgraph Data ["Persistence Layer"]
         MDB[("MongoDB Atlas Cloud Cluster")]
     end
     class Data,MDB database;
 
-    subgraph External ["🔌 Third-Party APIs"]
+    subgraph External ["Third-Party APIs"]
         Brevo["Brevo HTTP Delivery REST API"]
         LLM["AI Orchestration (Gemini/Grok/Groq)"]
     end
     class External,Brevo,LLM external;
 
-    %% Network Connections
     SPA -->|HTTPS REST| RT
     SIOC -->|WSS Protocol / Heartbeats| SIOS
     Controllers -->|Mongoose ODM| MDB
@@ -69,9 +61,15 @@ graph TD
 
 ---
 
-## 🔑 Authentication & OTP Verification Flow
+## Core Execution Flows Explained
 
-Zenith enforces a dual-stage authentication pipeline to verify email addresses before users can access workspaces. Rather than failing on re-registration, the backend transparently triggers an OTP refresh.
+This section details how the primary features of the platform operate behind the scenes.
+
+### 1. Authentication and Registration Flow
+To prevent unverified accounts from cluttering the system, Zenith utilizes a two-stage registration pipeline.
+- **Stage 1 (Sign Up)**: When a user registers, their account is initially created in an unverified state (`isVerified: false`). A 6-digit One-Time Password (OTP) is generated, hashed, saved to the database, and dispatched to their email address via the Brevo HTTP API.
+- **Self-Healing Re-Registration**: If a user attempts to sign up again with the same email but has not yet completed verification, the system does not fail. Instead, it generates a fresh OTP, resets the expiration timer, sends a new email, and instructs the client to redirect to the verification screen.
+- **Stage 2 (Verification)**: The user enters the 6-digit code. The server verifies it against the database and checks that it has not expired. Upon success, the account is marked verified (`isVerified: true`), the OTP field is wiped, and a JSON Web Token (JWT) is returned to establish the session.
 
 ```mermaid
 sequenceDiagram
@@ -112,32 +110,36 @@ sequenceDiagram
     end
 ```
 
----
+### 2. Real-Time Kanban Synchronization
+Every kanban board is mapped to a unique room inside Socket.io (`boardId`).
+- **Drag-and-Drop Action**: When a user drags a task card from one list column to another, the client immediately updates its local UI for smooth feedback. It then broadcasts a `card-moved` event containing the card details and position data to the server.
+- **State Broadcast**: The Socket.io broker intercepts this event and transmits the update to all active socket connections joined to the same `boardId` room (except the sender). Receiving clients catch this event and update their local TanStack Query cache dynamically, syncing the board without requiring manual page refreshes.
 
-## 📡 Live Board Synchronization & Presence Rooms
-
-Zenith coordinates drag-and-drop actions and user locations through scoped room architectures in Socket.io.
+### 3. Active Collaborator Presence
+To avoid collisions when multiple users edit the same card, Zenith tracks focus states in real time.
+- **Card Focus**: When a user opens a card modal, a `join-card` socket event is dispatched containing the board ID, card ID, and the current user's profile metadata.
+- **Tracking List**: The server keeps an active in-memory map of card viewers (`cardId -> list of active socket viewers`). When a user joins or leaves a card, this list is updated, and a `card-viewers-updated` event is broadcast to the parent board.
+- **UI Avatars**: The board view listens to this event and displays small, floating avatars of active viewers beside the card title, updating dynamically.
 
 ```mermaid
 graph LR
-    %% Styling Classes
     classDef user fill:#64748b,stroke:#475569,stroke-width:1px,color:#fff;
     classDef room fill:#0369a1,stroke:#0369a1,stroke-width:2px,color:#fff;
     classDef broker fill:#15803d,stroke:#15803d,stroke-width:2px,color:#fff;
 
-    UserA("👤 User A (Viewing Card 101)")
-    UserB("👤 User B (Viewing Card 101)")
-    UserC("👤 User C (Viewing Board Room)")
+    UserA("User A (Viewing Card 101)")
+    UserB("User B (Viewing Card 101)")
+    UserC("User C (Viewing Board Room)")
     
     class UserA,UserB,UserC user;
 
     subgraph SocketRooms ["Socket.io Shared Memory Rooms"]
-        BoardRoom["🏢 Board Room [Room ID: board_505]"]
-        CardRoom["📝 Card Detail Room [Room ID: card:101]"]
+        BoardRoom["Board Room (Room ID: board_505)"]
+        CardRoom["Card Detail Room (Room ID: card:101)"]
     end
     class BoardRoom,CardRoom room;
 
-    Broker["📡 Socket.io Server Event Broker"]
+    Broker["Socket.io Server Event Broker"]
     class Broker broker;
 
     UserA -->|1. join-board / join-card| Broker
@@ -147,7 +149,6 @@ graph LR
     Broker -->|Subscribe| BoardRoom
     Broker -->|Subscribe| CardRoom
 
-    %% Event dispatch
     UserA -->|Drag-n-Drop / card-moved| Broker
     Broker -->|Emit: update-card| BoardRoom
     BoardRoom -.->|Sync Kanban State| UserB
@@ -158,45 +159,51 @@ graph LR
     CardRoom -.->|Update viewer presence avatars| UserA
 ```
 
+### 4. Pluggable AI Service Pipeline
+The application features context-aware task assistance through third-party LLM integrations.
+- **AI Subtask Generation**: When a user requests subtasks for a card, the system extracts the card title and description. It constructs a structured prompt, requiring the output format to be a clean JSON array of action items.
+- **API Multiplexing**: The backend checks for active API keys in order of precedence: xAI Grok, Groq (Llama-3), and Google Gemini. If keys are present, the request is dispatched over HTTPS. If no keys are present, a local rule-based smart parser generates fallback subtasks based on keyword patterns.
+- **Database Append**: The returned subtasks are parsed, appended to the card's Mongoose document, and saved. The server then triggers a socket broadcast so other board viewers see the subtasks pop up instantly.
+
 ---
 
-## 📂 Project Architecture
+## Project Structure
 
 ```
 Task-Management-App/
-├── client/              # Single-Page Application (React 19, Vite, Tailwind CSS 4)
+├── client/              # React Single-Page Application (Vite + Tailwind CSS 4)
 │   ├── src/             
-│   │   ├── features/    # Module domain boundaries (auth, workspace, command, settings)
-│   │   ├── services/    # WebSocket handlers and axios interceptors
-│   │   └── index.css    # Global utility structures & glassmorphic tokens
-│   ├── vercel.json      # Client production rewrite routing configuration
+│   │   ├── features/    # Encapsulated feature domains (auth, workspace, command, settings)
+│   │   ├── services/    # WebSocket connection management and API client layers
+│   │   └── index.css    # Layout properties and glassmorphic color variables
+│   ├── vercel.json      # Rewrites routing config for Vercel
 │   └── README.md        # Frontend-specific implementation details
 │
-├── backend/             # Enterprise API Server (Express Core & Sockets)
+├── backend/             # Express API Server and WebSocket Broker
 │   ├── config/          # Database orchestrations and templates
-│   ├── models/          # Structured Mongoose Schemas (Workspace, Board, Card, User)
-│   ├── routes/          # RESTful Endpoint boundaries
-│   ├── sockets/         # WebSocket room controllers and presence maps
-│   ├── services/        # AI engines, Mail routing, Auth logic
+│   ├── models/          # Mongoose database schemas
+│   ├── routes/          # RESTful endpoint boundaries
+│   ├── sockets/         # WebSocket room handlers and presence mappings
+│   ├── services/        # AI engines, mail adapters, and business logic
 │   └── README.md        # Backend-specific architecture details
 │
-├── render.yaml          # Infrastructure as Code deployment descriptor
-└── README.md            # Master overview (this file)
+├── render.yaml          # Infrastructure as Code deployment configuration
+└── README.md            # Overall project documentation (this file)
 ```
 
 ---
 
-## 🏁 Development Setup & Deployment Playbook
+## Development Setup and Deployment Playbook
 
-For comprehensive local and production installation instructions, please refer to the targeted component documentations:
+For step-by-step instructions on setting up environment variables, running local test servers, or deploying to production hosting services, please consult the targeted component guides:
 
-*   📖 **Backend Server Configuration**: [backend/README.md](backend/README.md)
-*   📖 **Frontend Client Configuration**: [client/README.md](client/README.md)
+- **Backend Configuration & APIs**: [backend/README.md](backend/README.md)
+- **Frontend Client & UI Compilation**: [client/README.md](client/README.md)
 
 ---
 
-## 🛡️ Enterprise Security Implementations
+## Core Security Architectures
 
-*   **Dynamic CORS Whitelisting**: The Express middleware queries origin headers dynamically, matching requests against verified regular expression arrays to secure REST and WebSockets from malicious cross-origin execution.
-*   **Bypass Port Throttling**: Outbound transaction emails utilize Brevo's HTTPS API over port `443` rather than standard SMTP ports `465/587`. This bypasses port-blocking mechanisms found in modern container host networks (e.g. Render, AWS Fargate).
-*   **Encapsulated Environments**: Critical secret configurations (JWT secrets, DB credentials, SMTP API keys) are secured within system environment keys and never loaded inside client runtimes.
+- **Dynamic CORS Whitelisting**: Rather than allowing wildcard access, the Express CORS middleware inspects incoming origin headers dynamically. It verifies them against configured production domains, preventing unauthorized cross-origin requests.
+- **Bypass Port Throttling**: Outbound transaction emails utilize Brevo's HTTPS API over port `443` rather than standard SMTP ports `465/587`. This bypasses port-blocking mechanisms found in modern container host networks (e.g. Render, AWS Fargate).
+- **Encapsulated Secrets**: All critical API credentials, JWT signers, and database connection strings are managed as environment variables on the hosting platform and are never compiled into the public client application.
