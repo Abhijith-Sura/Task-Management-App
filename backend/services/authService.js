@@ -59,12 +59,43 @@ class AuthService {
   async register(data) {
     const { name, email, password } = data;
 
-    const userExists = await User.findOne({ email });
-    if (userExists) {
-      throw new Error("User already exists");
+    const existingUser = await User.findOne({ email });
+
+    // --- Handle already-registered but UNVERIFIED user ---
+    // This happens when SMTP fails on first registration attempt.
+    // Instead of a 500 error, we resend the OTP so they can verify.
+    if (existingUser && !existingUser.isVerified) {
+      const otp = Math.floor(100000 + Math.random() * 900000).toString();
+      const otpExpire = Date.now() + 15 * 60 * 1000;
+      existingUser.verificationToken = otp;
+      existingUser.verificationExpire = otpExpire;
+      await existingUser.save();
+
+      let emailSent = true;
+      try {
+        await this.sendOtpEmail(existingUser.email, otp);
+      } catch (err) {
+        console.error("Failed to send verification email:", err.message);
+        emailSent = false;
+      }
+
+      return {
+        verified: false,
+        email: existingUser.email,
+        message: emailSent
+          ? "Account already registered but unverified. Fresh authorization key sent to your email."
+          : "Account already registered but unverified. [SMTP ERROR] Check Render logs for the authorization key!",
+      };
     }
 
-    // Generate a 6-digit numeric OTP
+    // --- Handle fully registered and verified user ---
+    if (existingUser && existingUser.isVerified) {
+      const err = new Error("An account with this email already exists. Please log in.");
+      err.statusCode = 400;
+      throw err;
+    }
+
+    // --- Create fresh new user ---
     const otp = Math.floor(100000 + Math.random() * 900000).toString();
     const otpExpire = Date.now() + 15 * 60 * 1000; // 15 minutes
 
@@ -90,7 +121,7 @@ class AuthService {
       email: user.email,
       message: emailSent
         ? "Operator profile created. Authorization key sent to your email."
-        : "Operator profile created. [SMTP ERROR] Check backend console/terminal for the authorization key!",
+        : "Operator profile created. [SMTP ERROR] Check Render logs for the authorization key!",
     };
   }
 
@@ -123,7 +154,7 @@ class AuthService {
           email: user.email,
           message: emailSent
             ? "Operator profile is unverified. Fresh authorization key dispatched."
-            : "Operator profile is unverified. [SMTP ERROR] Check backend console/terminal for the fresh key!",
+            : "Operator profile is unverified. [SMTP ERROR] Check Render logs for the fresh key!",
         };
       }
 
@@ -139,7 +170,9 @@ class AuthService {
         token,
       };
     } else {
-      throw new Error("Invalid email or password");
+      const err = new Error("Invalid email or password");
+      err.statusCode = 401;
+      throw err;
     }
   }
 
@@ -154,7 +187,9 @@ class AuthService {
     });
 
     if (!user) {
-      throw new Error("Invalid or expired authorization key.");
+      const err = new Error("Invalid or expired authorization key.");
+      err.statusCode = 400;
+      throw err;
     }
 
     user.isVerified = true;
@@ -184,11 +219,15 @@ class AuthService {
     const user = await User.findOne({ email });
 
     if (!user) {
-      throw new Error("Operator profile not found.");
+      const err = new Error("Operator profile not found.");
+      err.statusCode = 404;
+      throw err;
     }
 
     if (user.isVerified) {
-      throw new Error("Operator profile is already verified.");
+      const err = new Error("Operator profile is already verified.");
+      err.statusCode = 400;
+      throw err;
     }
 
     const otp = Math.floor(100000 + Math.random() * 900000).toString();
