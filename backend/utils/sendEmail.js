@@ -1,39 +1,49 @@
+/**
+ * @desc    Email service using Resend HTTP API (primary) or SMTP (fallback).
+ *          Resend HTTP API uses HTTPS (port 443) which is NEVER blocked by
+ *          cloud providers like Render, unlike SMTP ports 465/587.
+ */
+
 import nodemailer from "nodemailer";
 
-const sendEmail = async (options) => {
+/**
+ * Send email via Resend HTTP API (no SMTP, no port blocking)
+ */
+const sendViaResendAPI = async (options, fromAddress, fromName) => {
+  const response = await fetch("https://api.resend.com/emails", {
+    method: "POST",
+    headers: {
+      "Authorization": `Bearer ${process.env.RESEND_API_KEY}`,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      from: `${fromName} <${fromAddress}>`,
+      to: [options.email],
+      subject: options.subject,
+      html: options.html || options.message,
+      text: options.message,
+    }),
+  });
+
+  const data = await response.json();
+
+  if (!response.ok) {
+    console.error("❌ Resend API Error Response:", JSON.stringify(data));
+    throw new Error(data.message || `Resend API returned ${response.status}`);
+  }
+
+  return data;
+};
+
+/**
+ * Send email via SMTP (nodemailer)
+ */
+const sendViaSMTP = async (options, fromAddress, fromName) => {
   let transporter;
-  let providerName = "UNKNOWN";
 
-  console.log("=============================================================");
-  console.log("📧 [EMAIL SERVICE] Attempting to send email...");
-  console.log(`   TO: ${options.email}`);
-  console.log(`   SUBJECT: ${options.subject}`);
-  console.log(`   RESEND_API_KEY set: ${!!process.env.RESEND_API_KEY}`);
-  console.log(`   SMTP_HOST set: ${!!process.env.SMTP_HOST}`);
-  console.log(`   SMTP_USER set: ${!!process.env.SMTP_USER}`);
-  console.log("=============================================================");
-
-  if (process.env.RESEND_API_KEY) {
-    // --- PRIMARY: Resend SMTP Relay ---
-    providerName = "RESEND";
-    console.log("📧 Using RESEND SMTP relay...");
-    console.log(`   RESEND_FROM_EMAIL: ${process.env.RESEND_FROM_EMAIL || "NOT SET"}`);
-    transporter = nodemailer.createTransport({
-      host: "smtp.resend.com",
-      port: 465,
-      secure: true,
-      auth: {
-        user: "resend",
-        pass: process.env.RESEND_API_KEY,
-      },
-    });
-  } else if (process.env.SMTP_HOST && process.env.SMTP_USER) {
-    // --- FALLBACK: Custom SMTP (Gmail, Outlook, etc.) ---
-    providerName = `CUSTOM_SMTP (${process.env.SMTP_HOST})`;
+  if (process.env.SMTP_HOST && process.env.SMTP_USER) {
     const port = parseInt(process.env.SMTP_PORT) || 587;
     const secure = process.env.SMTP_SECURE === "true";
-    console.log(`📧 Using Custom SMTP: ${process.env.SMTP_HOST}:${port} (secure=${secure})`);
-    console.log(`   SMTP_USER: ${process.env.SMTP_USER}`);
     transporter = nodemailer.createTransport({
       host: process.env.SMTP_HOST,
       port,
@@ -42,12 +52,11 @@ const sendEmail = async (options) => {
         user: process.env.SMTP_USER,
         pass: process.env.SMTP_PASS,
       },
+      connectionTimeout: 10000, // 10 second timeout instead of 4 minute hang
     });
   } else {
-    // --- DEV ONLY: Ethereal mock email ---
-    providerName = "ETHEREAL (MOCK - NO REAL EMAILS SENT)";
-    console.log("⚠️  NO EMAIL PROVIDER CONFIGURED! Using Ethereal mock email.");
-    console.log("⚠️  Emails will NOT be delivered to real inboxes!");
+    // Ethereal mock email for development
+    console.log("⚠️  No email provider configured. Using Ethereal mock email.");
     const testAccount = await nodemailer.createTestAccount();
     transporter = nodemailer.createTransport({
       host: "smtp.ethereal.email",
@@ -60,43 +69,61 @@ const sendEmail = async (options) => {
     });
   }
 
-  // Determine the FROM address
-  const fromAddress = process.env.RESEND_FROM_EMAIL
-    || process.env.FROM_EMAIL
-    || "noreply@taskmanagement.com";
-  const fromName = process.env.FROM_NAME || "Zenith Workspace";
-
-  const message = {
+  const info = await transporter.sendMail({
     from: `${fromName} <${fromAddress}>`,
     to: options.email,
     subject: options.subject,
     text: options.message,
     html: options.html,
-  };
+  });
 
-  console.log(`📧 Sending via ${providerName}...`);
-  console.log(`   FROM: ${message.from}`);
-  console.log(`   TO:   ${message.to}`);
+  if (!process.env.SMTP_HOST) {
+    console.log("📧 Ethereal Preview URL:", nodemailer.getTestMessageUrl(info));
+  }
 
-  try {
-    const info = await transporter.sendMail(message);
-    console.log("✅ EMAIL SENT SUCCESSFULLY!");
-    console.log(`   Message ID: ${info.messageId}`);
-    console.log(`   Response: ${info.response || "N/A"}`);
+  return info;
+};
 
-    // Print Ethereal preview URL in dev mode
-    if (providerName.includes("ETHEREAL")) {
-      console.log("📧 Ethereal Preview URL:", nodemailer.getTestMessageUrl(info));
+/**
+ * Main email function
+ */
+const sendEmail = async (options) => {
+  const fromAddress = process.env.RESEND_FROM_EMAIL
+    || process.env.FROM_EMAIL
+    || "noreply@taskmanagement.com";
+  const fromName = process.env.FROM_NAME || "Zenith Workspace";
+
+  console.log("=============================================================");
+  console.log("📧 [EMAIL SERVICE] Sending email...");
+  console.log(`   TO: ${options.email}`);
+  console.log(`   SUBJECT: ${options.subject}`);
+  console.log(`   FROM: ${fromName} <${fromAddress}>`);
+  console.log(`   RESEND_API_KEY: ${process.env.RESEND_API_KEY ? "SET ✅" : "NOT SET ❌"}`);
+  console.log("=============================================================");
+
+  // --- PRIMARY: Resend HTTP API (uses HTTPS port 443, never blocked) ---
+  if (process.env.RESEND_API_KEY) {
+    console.log("📧 Using Resend HTTP API (HTTPS, port 443)...");
+    try {
+      const result = await sendViaResendAPI(options, fromAddress, fromName);
+      console.log("✅ EMAIL SENT SUCCESSFULLY via Resend HTTP API!");
+      console.log(`   ID: ${result.id}`);
+      return result;
+    } catch (error) {
+      console.error("❌ Resend HTTP API failed:", error.message);
+      throw error;
     }
+  }
 
-    return info;
+  // --- FALLBACK: SMTP ---
+  console.log("📧 Falling back to SMTP...");
+  try {
+    const result = await sendViaSMTP(options, fromAddress, fromName);
+    console.log("✅ EMAIL SENT SUCCESSFULLY via SMTP!");
+    return result;
   } catch (error) {
-    console.error("❌ EMAIL SEND FAILED!");
-    console.error(`   Provider: ${providerName}`);
-    console.error(`   Error Code: ${error.code || "NONE"}`);
-    console.error(`   Error Message: ${error.message}`);
-    console.error(`   Full Error:`, error);
-    throw error; // Re-throw so the caller knows it failed
+    console.error("❌ SMTP failed:", error.message);
+    throw error;
   }
 };
 
