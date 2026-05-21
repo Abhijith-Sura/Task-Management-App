@@ -1,40 +1,39 @@
-import List from "../models/List.js";
+import listService from "../services/listService.js";
+import asyncHandler from "../utils/asyncHandler.js";
+import { successResponse } from "../utils/apiResponse.js";
 
-export const createList = async (req, res) => {
+/**
+ * @desc    Create a new list
+ * @route   POST /api/lists
+ */
+export const createList = asyncHandler(async (req, res) => {
+  const list = await listService.createList(req.body);
+  return successResponse(res, list, "List created successfully", 201);
+});
 
-  try {
+/**
+ * @desc    Get lists for a board
+ * @route   GET /api/lists/:boardId
+ */
+export const getLists = asyncHandler(async (req, res) => {
+  const lists = await listService.getListsByBoard(req.params.boardId);
+  return successResponse(res, lists);
+});
 
-    const { title, boardId } = req.body;
+/**
+ * @desc    Delete a list
+ * @route   DELETE /api/lists/:id
+ */
+export const deleteList = asyncHandler(async (req, res) => {
+  await listService.deleteList(req.params.id);
+  return successResponse(res, null, "List deleted successfully");
+});
 
-    const list = await List.create({
-      title,
-      boardId
-    });
-
-    res.json(list);
-
-  } catch (error) {
-
-    res.status(500).json({ message: error.message });
-
-  }
-
-};
-
-export const getLists = async (req, res) => {
-
-  try {
-
-    const lists = await List.find({
-      boardId: req.params.boardId
-    });
-
-    res.json(lists);
-
-  } catch (error) {
-
-    res.status(500).json({ message: error.message });
-
-  }
-
-};
+/**
+ * @desc    Update list details
+ * @route   PUT /api/lists/:id
+ */
+export const updateList = asyncHandler(async (req, res) => {
+  const list = await listService.updateList(req.params.id, req.body);
+  return successResponse(res, list, "List updated successfully");
+});
