@@ -231,8 +231,11 @@ export const VerifyOtp = ({ email, onVerificationSuccess, onSwitchToLogin }) => 
         </div>
 
         {/* Spam warnings footer */}
-        <div className="mt-8 pt-6 border-t border-border flex flex-col gap-1 font-mono text-[0.55rem] text-[#A1A1AA] opacity-50 select-none text-center leading-normal">
-          <div>Please check your spam/junk folder if the email does not appear in your inbox.</div>
+        <div className="mt-6 pt-4 border-t border-border flex flex-col items-center">
+          <div className="flex items-center gap-2 bg-yellow-500/10 border border-yellow-500/20 text-yellow-500/90 px-4 py-2.5 rounded-sm font-mono text-[0.7rem] uppercase tracking-wide">
+            <ShieldAlert size={14} className="text-yellow-500" />
+            <span>Check your <strong>spam/junk</strong> folder if you can't find the email</span>
+          </div>
         </div>
       </div>
     </div>
