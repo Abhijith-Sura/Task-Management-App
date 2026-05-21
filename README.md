@@ -60,11 +60,11 @@ graph TD
     class External,Brevo,LLM external;
 
     %% Network Connections
-    SPA -- HTTPS REST -- RT
-    SIOC -- WSS Protocol / Heartbeats -- SIOS
-    Controllers -- Mongoose ODM -- MDB
-    Controllers -- HTTPS (Port 443) -- Brevo
-    AIService -- Secure Token Bearer -- LLM
+    SPA -->|HTTPS REST| RT
+    SIOC -->|WSS Protocol / Heartbeats| SIOS
+    Controllers -->|Mongoose ODM| MDB
+    Controllers -->|HTTPS Port 443| Brevo
+    AIService -->|Secure Token Bearer| LLM
 ```
 
 ---
