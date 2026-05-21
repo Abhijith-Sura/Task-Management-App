@@ -1,94 +1,147 @@
 # 🎨 Zenith Client — React SPA & High-Fidelity UI
 
-The frontend client for **Zenith Workspace** is a high-fidelity, interactive Single-Page Application (SPA) built with React and Vite. It boasts an ultra-modern glassmorphic design, dynamic real-time presence indicators, comprehensive accessibility markup, and responsive layouts.
+Zenith Client is a premium, high-fidelity Single-Page Application (SPA) built with React 19 and Vite. The user interface features custom HSL tokens, glassmorphism aesthetics, responsive layouts, real-time WebSocket state sync, and TanStack React Query caching pipelines.
 
 ---
 
-## ✨ Features
+## 🎨 Design Tokens & UI Specs
 
-*   **Glassmorphic Design System**: Custom HSL color tokens, backdrop blurs, and border glows configured for dark mode.
-*   **Real-time Collaboration**: Live tracking showing which card other users are currently viewing, plus instant kanban board updates.
-*   **Drag-and-Drop Canvas**: Intuitive task rearrangement across columns powered by React state pipelines.
-*   **Interactive Command Menu**: Contextual search and command triggers (`Cmd/Ctrl + K`) for instant workspace navigation.
-*   **AI Autopilot Actions**: One-click AI checklist generation and comment summaries within task detail modals.
-*   **Interactive Analytics**: Data visualization showing board activity metrics and workflow progress distributions.
+Zenith uses custom HSL-tailored colors configured in Tailwind CSS 4 to support dark-mode themes:
+
+```mermaid
+graph LR
+    %% Styling
+    classDef token fill:#1e1b4b,stroke:#4f46e5,stroke-width:2px,color:#fff;
+    
+    subgraph ColorTokens ["🎨 HSL Color Palette Tokens"]
+        Bg["🌑 Background: HSL(240, 10%, 3.9%)"]
+        Surf["🌑 Surface: HSL(240, 10%, 10%)"]
+        Bord["🌑 Border: HSL(240, 5.9%, 15%)"]
+        Blue["⚡ Accent Blue: HSL(217.2, 91.2%, 59.8%)"]
+    end
+    class Bg,Surf,Bord,Blue token;
+
+    subgraph VisualStyle ["💎 UI Rendering Techniques"]
+        Blur["🌀 Backdrop Blur (20px)"]
+        Glow["✨ Interactive Border Glows"]
+        Micro["⚡ Hardware-Accelerated Animations"]
+    end
+    class Blur,Glow,Micro token;
+
+    ColorTokens --> VisualStyle
+```
 
 ---
 
-## 📦 Tech Stack & Dependencies
+## 🏗️ State Architecture & Caching
 
-*   **Bundler & Tooling**: Vite & ESLint
-*   **Component Framework**: React (v19.x)
-*   **State Management & Caching**: TanStack React Query (v5.x)
-*   **Animation System**: Framer Motion
-*   **HTTP Pipelines**: Axios
-*   **Styling Engine**: Tailwind CSS (v4.x)
-*   **Iconography**: Lucide React
-*   **Real-Time Sync**: Socket.io-client
-*   **Rich Content Renderer**: React Markdown & Remark GFM
+The application handles server state caching, local state transformations, and real-time socket events through a multi-tier state architecture:
+
+```mermaid
+flowchart TD
+    %% Styling Classes
+    classDef react fill:#3b82f6,stroke:#1d4ed8,color:#fff;
+    classDef queries fill:#8b5cf6,stroke:#6d28d9,color:#fff;
+    classDef sockets fill:#f59e0b,stroke:#b45309,color:#fff;
+    classDef local fill:#10b981,stroke:#047857,color:#fff;
+
+    Views["🖥️ React 19 View Components<br/>(Board, CardModal, Dashboard)"]
+    class Views react;
+
+    subgraph ServerState ["⚡ Server State Orchestrator"]
+        ReactQuery["TanStack React Query Cache"]
+        Axios["Axios API Clients<br/>(Interceptors & Token Bearers)"]
+        
+        ReactQuery --> Axios
+    end
+    class ReactQuery,Axios queries;
+
+    subgraph RealTimeState ["📡 Real-Time Synchronizer"]
+        SocketIO["Socket.io Client Listener"]
+        PresenceMap["Active Card Viewers Presence Context"]
+        
+        SocketIO --> PresenceMap
+    end
+    class SocketIO,PresenceMap sockets;
+
+    subgraph ClientLocalState ["📦 Local Layout State"]
+        FramerMotion["Framer Motion Animators"]
+        ZUST["Local Form / Modal Hooks"]
+    end
+    class FramerMotion,ZUST local;
+
+    Views ==> ReactQuery
+    Views ==> SocketIO
+    Views ==> FramerMotion
+    SocketIO -.->|Invalidate / Update cache| ReactQuery
+```
 
 ---
 
-## 📂 Client Architecture
+## 📁 Modular Directory Architecture
+
+The frontend follows a domain-driven feature folder architecture:
 
 ```
 client/
-├── public/             # Static public assets
+├── public/                 # Static visual assets
 ├── src/
-│   ├── assets/         # Images, background gradients, and media
-│   ├── components/     # Reusable global design UI components (Buttons, Modals, Loaders)
-│   ├── features/       # Modular features
-│   │   ├── auth/          # Registration, Login, and OTP validation screens
-│   │   ├── workspace/     # Canvas workspace, Trello-like Boards, Lists, and Cards
-│   │   ├── analytics/     # Dashboard activity charts
-│   │   ├── command/       # Ctrl+K Command Palette
-│   │   └── accessibility/ # Accessibility theme settings
-│   ├── layouts/        # App shells, Navigation bars, and layout wrappers
-│   ├── services/       # Decoupled API wrappers and WebSocket listeners
-│   ├── utils/          # Formatting helpers and local storage wrappers
-│   ├── App.jsx         # App routing and React Query providers
-│   ├── index.css       # Core Tailwind CSS imports, theme variables, and keyframes
-│   └── main.jsx        # App mount orchestrator
-└── vercel.json         # SPA fallback routing configuration for Vercel
+│   ├── assets/             # Gradients, branding, background images
+│   ├── components/         # Global shared UI elements (Buttons, Modals, Loader states)
+│   ├── layouts/            # Shell templates (AppShell, DashboardLayout)
+│   ├── services/           # Axios handlers and socket connection builders
+│   ├── features/           # Modular Domain Boundaries
+│   │   ├── auth/           # Login, registration, and OTP verification components
+│   │   ├── workspace/      # Interactive Kanban boards, list columns, cards
+│   │   ├── command/        # Command Menu (Ctrl + K) navigation system
+│   │   └── analytics/      # Performance metrics and chart components
+│   ├── index.css           # Core Tailwind CSS v4 variables & glassmorphism tokens
+│   ├── App.jsx             # React routing and provider structures
+│   └── main.jsx            # Application mount orchestrator
+└── vercel.json             # Static hosting route configs
 ```
 
 ---
 
-## 🔧 Environment Setup
+## 📡 Live Collaborator Presence Engine
 
-Create a `.env` file inside the `client` folder:
+Team members are displayed instantly on cards using the WebSocket state manager:
+1.  **Mounting Card Modal**: Emits a `join-card` socket event containing details about the board, card, and user.
+2.  **State Broadcasting**: Other users in the same board receive `card-viewers-updated` events, triggering live avatar rendering.
+3.  **Unmounting / Closing**: Emits `leave-card`, removing the current user from active viewer states.
+4.  **Network Disconnections**: If connections terminate unexpectedly, socket listeners automatically trigger cleanups on the server to prevent stale presence flags.
+
+---
+
+## 🚀 Installation & Runs
+
+### 1. Configure local variables
+Create a `.env` file in the root of the `/client` folder:
 
 ```env
-# URL of the Backend API gateway
+# Point to your local Node Express server:
 VITE_API_URL=http://localhost:5000/api
-
-# URL of the Backend Socket server
 VITE_SOCKET_URL=http://localhost:5000
 ```
 
----
-
-## 🛠️ Local Development
-
-### 1. Install Project Dependencies
+### 2. Setup dependencies
 ```bash
 npm install
 ```
 
-### 2. Launch Local Dev Server (HMR Enabled)
+### 3. Run Dev Mode (HMR Hot-Reloading)
 ```bash
 npm run dev
 ```
-The client app will open by default at `http://localhost:5173`.
 
-### 3. Build Production Bundle
+### 4. Compile Production Builds
 ```bash
 npm run build
 ```
-This builds static assets inside the `dist/` directory, optimized for zero-downtime edge hosting.
 
-### 4. Local Production Preview
-```bash
-npm run preview
-```
-Runs a local preview of the production bundle.
+---
+
+## ⚡ Performance Optimization Mechanics
+*   **React Query Invalidation**: Rather than reloading page states, Zenith invalidates precise query keys (`['board', boardId]`) on card movements, minimizing network overhead.
+*   **Presence Debouncing**: Rapid workspace transitions are filtered cleanly to prevent network overhead from WebSocket joins.
+*   **Hardware Acceleration**: Motion elements run on compositor layers using Framer Motion styles, ensuring stable frame rates across mobile and desktop devices.
