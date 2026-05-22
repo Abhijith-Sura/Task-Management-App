@@ -143,25 +143,18 @@ export const SettingsModal = ({
     e.preventDefault();
     if (!inviteEmail.trim()) return;
     
-    setEmailStatus({ type: 'loading', message: 'Sending targeted invitation email...' });
+    setEmailStatus({ type: 'loading', message: 'Sending invitation email...' });
     try {
-      await onCreateInvitation(inviteEmail, inviteRole);
-      setEmailStatus({ type: 'success', message: `Targeted invitation sent to: ${inviteEmail}` });
+      const result = await onCreateInvitation(inviteEmail, inviteRole);
+      setEmailStatus({ type: 'success', message: `Invitation sent to: ${inviteEmail}` });
       setInviteEmail('');
     } catch (err) {
-      console.error("Invite email error, falling back to direct add:", err);
-      try {
-        await onInviteMember(inviteEmail);
-        setEmailStatus({ type: 'success', message: `Member added directly: ${inviteEmail}` });
-        setInviteEmail('');
-      } catch (directErr) {
-        setEmailStatus({ 
-          type: 'error', 
-          message: err.response?.data?.message || err.message || 'Direct assignment failure' 
-        });
-      }
+      setEmailStatus({ 
+        type: 'error', 
+        message: err.response?.data?.message || err.message || 'Failed to send invitation. Please try again.' 
+      });
     } finally {
-      setTimeout(() => setEmailStatus({ type: '', message: '' }), 4000);
+      setTimeout(() => setEmailStatus({ type: '', message: '' }), 5000);
     }
   };
 

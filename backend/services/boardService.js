@@ -230,28 +230,40 @@ class BoardService {
   }
 
   /**
-   * @desc    Invite a member to a board by email
+   * @desc    Invite a member to a board by email.
+   *          If the user is already registered, they are added directly.
+   *          If not registered, a targeted invitation email is sent so they
+   *          can sign up and join the board seamlessly.
    */
-  async inviteMember(boardId, email) {
-    const user = await User.findOne({ email });
-    if (!user) {
-      throw new Error("User with this email does not exist");
+  async inviteMember(boardId, email, userId, clientOrigin) {
+    const user = await User.findOne({ email: email.toLowerCase() });
+
+    // If user exists in the system, add them directly to the board
+    if (user) {
+      const board = await Board.findByIdAndUpdate(
+        boardId,
+        { $addToSet: { members: user._id } },
+        { new: true }
+      ).populate("members", "name email avatar");
+
+      if (board && board.workspaceId) {
+        await Workspace.updateOne(
+          { _id: board.workspaceId, "members.user": { $ne: user._id } },
+          { $push: { members: { user: user._id, role: "editor" } } }
+        );
+      }
+
+      return board;
     }
 
-    const board = await Board.findByIdAndUpdate(
-      boardId,
-      { $addToSet: { members: user._id } },
-      { new: true }
-    ).populate("members", "name email avatar");
-
-    if (board && board.workspaceId) {
-      await Workspace.updateOne(
-        { _id: board.workspaceId, "members.user": { $ne: user._id } },
-        { $push: { members: { user: user._id, role: "editor" } } }
-      );
+    // If user is NOT registered, send a targeted invitation email instead
+    // so they can sign up and be added to the board upon accepting
+    if (userId && clientOrigin) {
+      await this.createInvitation(boardId, email, "editor", userId, clientOrigin);
     }
 
-    return board;
+    // Return null to signal an invite email was sent, not a direct add
+    return null;
   }
 
   /**

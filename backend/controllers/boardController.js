@@ -58,8 +58,12 @@ export const updateBoard = asyncHandler(async (req, res) => {
  */
 export const inviteMember = asyncHandler(async (req, res) => {
   const { boardId, email } = req.body;
-  const board = await boardService.inviteMember(boardId, email);
-  return successResponse(res, board, "Member invited successfully");
+  const origin = req.get("origin") || req.headers.origin;
+  const board = await boardService.inviteMember(boardId, email, req.user.id, origin);
+  if (board) {
+    return successResponse(res, board, "Member added to board successfully");
+  }
+  return successResponse(res, null, "Invitation email sent to unregistered user");
 });
 
 /**
