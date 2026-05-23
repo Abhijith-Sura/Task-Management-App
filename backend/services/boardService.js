@@ -1,4 +1,5 @@
 import mongoose from "mongoose";
+import AppError from "../utils/AppError.js";
 import Board from "../models/Board.js";
 import List from "../models/List.js";
 import Card from "../models/Card.js";
@@ -52,7 +53,7 @@ class BoardService {
     // 1. Fetch template definition
     const template = boardTemplates.find(t => t.id === templateId);
     if (!template) {
-      throw new Error(`Template with id '${templateId}' not found.`);
+      throw new AppError(`Template with id '${templateId}' not found.`, 404);
     }
 
     // 2. Create the board
@@ -200,7 +201,7 @@ class BoardService {
       .lean();
 
     if (!board) {
-      throw new Error("Board not found");
+      throw new AppError("Board not found", 404);
     }
 
     // Add comment counts to each card
@@ -225,7 +226,7 @@ class BoardService {
       .populate("owner", "name email avatar")
       .populate("members", "name email avatar");
 
-    if (!board) throw new Error("Board not found");
+    if (!board) throw new AppError("Board not found", 404);
     return board;
   }
 
@@ -286,17 +287,18 @@ class BoardService {
    */
   async generateInviteLink(boardId, userId, clientOrigin) {
     const board = await Board.findById(boardId).populate("workspaceId");
-    if (!board) throw new Error("Board not found");
+    if (!board) throw new AppError("Board not found", 404);
 
     const isBoardOwner = board.owner.toString() === userId.toString();
+    const isBoardMember = board.members.some(m => m.toString() === userId.toString());
     const workspace = board.workspaceId;
-    const isWorkspaceAdminOrOwner = workspace && (
+    const isWorkspaceMember = workspace && (
       workspace.owner.toString() === userId.toString() ||
-      workspace.members.some(m => m.user && m.user.toString() === userId.toString() && m.role === "admin")
+      workspace.members.some(m => m.user && m.user.toString() === userId.toString())
     );
 
-    if (!isBoardOwner && !isWorkspaceAdminOrOwner) {
-      throw new Error("Only the board owner or a workspace admin can generate invite links");
+    if (!isBoardOwner && !isBoardMember && !isWorkspaceMember) {
+      throw new AppError("You must be a board or workspace member to generate an invite link", 403);
     }
 
     if (!board.inviteToken) {
@@ -313,7 +315,7 @@ class BoardService {
    */
   async resetInviteLink(boardId, userId, clientOrigin) {
     const board = await Board.findById(boardId).populate("workspaceId");
-    if (!board) throw new Error("Board not found");
+    if (!board) throw new AppError("Board not found", 404);
 
     const isBoardOwner = board.owner.toString() === userId.toString();
     const workspace = board.workspaceId;
@@ -323,7 +325,7 @@ class BoardService {
     );
 
     if (!isBoardOwner && !isWorkspaceAdminOrOwner) {
-      throw new Error("Only the board owner or a workspace admin can reset invite links");
+      throw new AppError("Only the board owner or a workspace admin can reset invite links", 403);
     }
 
     board.inviteToken = crypto.randomBytes(16).toString("hex");
@@ -338,7 +340,7 @@ class BoardService {
    */
   async joinViaLink(token, userId) {
     const board = await Board.findOne({ inviteToken: token });
-    if (!board) throw new Error("Invalid or expired invite link");
+    if (!board) throw new AppError("Invalid or expired invite link", 404);
 
     if (
       !board.members.includes(userId) &&
@@ -363,9 +365,9 @@ class BoardService {
    */
   async sendInviteEmail(boardId, email, userId, clientOrigin) {
     const board = await Board.findById(boardId).populate("owner", "name");
-    if (!board) throw new Error("Board not found");
+    if (!board) throw new AppError("Board not found", 404);
     if (board.owner._id.toString() !== userId.toString()) {
-      throw new Error("Only the board owner can send email invites");
+      throw new AppError("Only the board owner can send email invites", 403);
     }
 
     if (!board.inviteToken) {
@@ -405,7 +407,7 @@ class BoardService {
       });
     } catch (error) {
       console.error("Failed to send invite email", error);
-      throw new Error("Failed to send invite email");
+      throw new AppError("Failed to send invite email", 500);
     }
 
     return { message: "Invite email sent successfully" };
@@ -416,12 +418,12 @@ class BoardService {
    */
   async createInvitation(boardId, email, role, userId, clientOrigin) {
     const board = await Board.findById(boardId).populate("owner", "name");
-    if (!board) throw new Error("Board not found");
+    if (!board) throw new AppError("Board not found", 404);
 
     // Check if user is already a member
     const existingUser = await User.findOne({ email: email.toLowerCase() });
     if (existingUser && (board.members.includes(existingUser._id) || board.owner.toString() === existingUser._id.toString())) {
-      throw new Error("User is already a member of this board");
+      throw new AppError("User is already a member of this board", 409);
     }
 
     // Revoke any existing pending invitations for this email + board to avoid clutter
@@ -475,7 +477,7 @@ class BoardService {
       console.error("Failed to send targeted invite email", error);
       // Delete the record if email dispatch fails completely
       await Invitation.findByIdAndDelete(invitation._id);
-      throw new Error("Failed to send targeted email invitation");
+      throw new AppError("Failed to send targeted email invitation", 500);
     }
 
     return invitation;
@@ -495,14 +497,14 @@ class BoardService {
    */
   async revokeInvitation(invitationId, userId) {
     const invite = await Invitation.findById(invitationId);
-    if (!invite) throw new Error("Invitation not found");
+    if (!invite) throw new AppError("Invitation not found", 404);
 
     const board = await Board.findById(invite.boardId);
-    if (!board) throw new Error("Board not found");
+    if (!board) throw new AppError("Board not found", 404);
 
     // Only board owner or admins can revoke
     if (board.owner.toString() !== userId.toString()) {
-      throw new Error("Unauthorized to revoke invitations");
+      throw new AppError("Unauthorized to revoke invitations", 403);
     }
 
     invite.status = "revoked";
@@ -516,14 +518,14 @@ class BoardService {
   async resendInvitation(invitationId, userId, clientOrigin) {
     const invite = await Invitation.findById(invitationId);
     if (!invite || invite.status !== "pending") {
-      throw new Error("Active pending invitation not found");
+      throw new AppError("Active pending invitation not found", 404);
     }
 
     const board = await Board.findById(invite.boardId).populate("owner", "name");
-    if (!board) throw new Error("Board not found");
+    if (!board) throw new AppError("Board not found", 404);
 
     if (board.owner.toString() !== userId.toString()) {
-      throw new Error("Unauthorized to resend invitations");
+      throw new AppError("Unauthorized to resend invitations", 403);
     }
 
     const frontendUrl = clientOrigin || process.env.FRONTEND_URL || "http://localhost:5173";
@@ -558,7 +560,7 @@ class BoardService {
       });
     } catch (error) {
       console.error("Failed to resend targeted invite email", error);
-      throw new Error("Failed to send targeted email reminder");
+      throw new AppError("Failed to send targeted email reminder", 500);
     }
 
     return invite;
@@ -569,10 +571,10 @@ class BoardService {
    */
   async acceptInvitation(token, userId) {
     const invite = await Invitation.findOne({ token, status: "pending" });
-    if (!invite) throw new Error("Invalid, expired, or revoked invitation link");
+    if (!invite) throw new AppError("Invalid, expired, or revoked invitation link", 404);
 
     const board = await Board.findById(invite.boardId);
-    if (!board) throw new Error("Board not found");
+    if (!board) throw new AppError("Board not found", 404);
 
     if (
       !board.members.includes(userId) &&
