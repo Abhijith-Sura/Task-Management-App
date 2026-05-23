@@ -83,16 +83,16 @@ export const useBoardData = (boardId) => {
     };
     const handleBoardRefresh = () => {
       queryClient.invalidateQueries({ queryKey: ['board', boardId] });
+      queryClient.invalidateQueries({ queryKey: ['board-invitations', boardId] });
     };
 
     socketService.onUpdateCard(handleCardUpdate);
     socketService.onBoardRefresh(handleBoardRefresh);
 
-    // Only disconnect when the boardId changes, not on every render
     return () => {
       socketService.leaveBoard?.(boardId);
     };
-  }, [boardId]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [boardId]);
 
   // Mutation for moving cards (Optimistic UI)
   const moveCardMutation = useMutation({

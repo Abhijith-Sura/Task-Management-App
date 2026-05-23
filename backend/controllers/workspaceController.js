@@ -122,5 +122,11 @@ export const evictMember = asyncHandler(async (req, res) => {
     { returnDocument: 'after' }
   ).populate("members.user", "name email avatar");
 
-  return successResponse(res, updatedWorkspace, "Collaborator evicited successfully");
+  // Pull the evicted member from all boards belonging to this workspace
+  await Board.updateMany(
+    { workspaceId },
+    { $pull: { members: memberId } }
+  );
+
+  return successResponse(res, updatedWorkspace, "Collaborator evicted successfully");
 });

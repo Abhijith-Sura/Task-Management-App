@@ -6,6 +6,7 @@ import { successResponse } from "../utils/apiResponse.js";
 import mongoose from "mongoose";
 import List from "../models/List.js";
 import Card from "../models/Card.js";
+import { broadcastToBoard } from "../sockets/socketHandler.js";
 
 /**
  * @desc    Create a new board
@@ -159,6 +160,7 @@ export const getInvitations = asyncHandler(async (req, res) => {
  */
 export const revokeInvitation = asyncHandler(async (req, res) => {
   const invite = await boardService.revokeInvitation(req.params.inviteId, req.user.id);
+  broadcastToBoard(invite.boardId, "board-refresh", { boardId: invite.boardId });
   return successResponse(res, invite, "Invitation revoked successfully");
 });
 
@@ -178,6 +180,7 @@ export const resendInvitation = asyncHandler(async (req, res) => {
  */
 export const acceptInvitation = asyncHandler(async (req, res) => {
   const result = await boardService.acceptInvitation(req.params.token, req.user.id);
+  broadcastToBoard(result.boardId, "board-refresh", { boardId: result.boardId });
   return successResponse(res, result, "Invitation accepted successfully");
 });
 
