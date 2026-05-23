@@ -203,6 +203,22 @@ export const useBoardData = (boardId) => {
       }
       return { previousResponse };
     },
+    onSuccess: (data) => {
+      if (data?.data?._id) {
+        queryClient.setQueryData(['board', boardId], (prev) => {
+          if (!prev?.data) return prev;
+          const next = JSON.parse(JSON.stringify(prev));
+          for (const list of next.data.lists) {
+            const tempCardIdx = list.cards.findIndex(c => c._id && c._id.toString().startsWith('temp-'));
+            if (tempCardIdx !== -1) {
+              list.cards[tempCardIdx] = data.data;
+              break;
+            }
+          }
+          return next;
+        });
+      }
+    },
     onError: (err, variables, context) => {
       if (context?.previousResponse) {
         queryClient.setQueryData(['board', boardId], context.previousResponse);

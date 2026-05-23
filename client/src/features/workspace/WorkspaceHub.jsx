@@ -188,9 +188,20 @@ export const WorkspaceHub = ({ onBoardSelect, onViewChange, onCreateBoard }) => 
       </AnimatePresence>
 
       <div className="grid grid-cols-1 gap-24">
-        {groupedWorkspaces.map((ws, idx) => (
-          <motion.div
-            key={ws._id}
+        {groupedWorkspaces.map((ws, idx) => {
+          const wsOwnerId = ws.owner?._id || ws.owner || '';
+          const currentUserId = currentUser._id || currentUser.id || '';
+          const isOwner = currentUserId && wsOwnerId && wsOwnerId.toString() === currentUserId.toString();
+          const memberInfo = ws.members?.find(m => {
+            const mId = m.user?._id || m.user || '';
+            return mId && mId.toString() === currentUserId.toString();
+          });
+          const isAdmin = isOwner || memberInfo?.role === 'admin';
+          const canCreateBoard = isOwner || memberInfo?.role === 'admin' || memberInfo?.role === 'editor';
+
+          return (
+            <motion.div
+              key={ws._id}
             initial={{ opacity: 0, y: 30 }}
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true }}
@@ -223,71 +234,75 @@ export const WorkspaceHub = ({ onBoardSelect, onViewChange, onCreateBoard }) => 
               </div>
               
               <div className="flex items-center gap-4 mt-8 lg:mt-0 relative z-10">
-                 <div className="flex gap-2">
+                  {isAdmin && (
+                    <div className="flex gap-2">
+                      <button 
+                        onClick={() => {
+                          if (window.showPremiumPrompt) {
+                            window.showPremiumPrompt(
+                              "Rename Workspace",
+                              "Enter new workspace name...",
+                              ws.name,
+                              (name) => {
+                                if (name.trim()) renameWorkspaceMutation.mutate({ id: ws._id, name: name.trim() });
+                              }
+                            );
+                          } else {
+                            const name = prompt("Rename workspace:", ws.name);
+                            if (name) renameWorkspaceMutation.mutate({ id: ws._id, name });
+                          }
+                        }}
+                        className="p-3 bg-white/[0.04] border border-white/[0.12] hover:bg-white/10 rounded-2xl text-slate-400 hover:text-white transition-all"
+                      >
+                        <Edit3 size={18} />
+                      </button>
+                      <button 
+                        onClick={() => {
+                          if (confirm(`Terminate workspace "${ws.name}"?`)) deleteWorkspaceMutation.mutate(ws._id);
+                        }}
+                        className="p-3 bg-white/[0.04] border border-white/[0.12] hover:bg-red-500/10 rounded-2xl text-slate-400 hover:text-red-500 transition-all"
+                      >
+                        <Trash2 size={18} />
+                      </button>
+                    </div>
+                  )}
+                  {isAdmin && canCreateBoard && <div className="w-[1px] h-10 bg-white/10 mx-2" />}
+                  {canCreateBoard && (
                     <button 
                       onClick={() => {
                         if (window.showPremiumPrompt) {
                           window.showPremiumPrompt(
-                            "Rename Workspace",
-                            "Enter new workspace name...",
-                            ws.name,
-                            (name) => {
-                              if (name.trim()) renameWorkspaceMutation.mutate({ id: ws._id, name: name.trim() });
+                            "New Board",
+                            `New board name for ${ws.name}...`,
+                            "",
+                            (title) => {
+                              if (title.trim()) {
+                                window.showPremiumPrompt(
+                                  "Board Category",
+                                  "Category (optional):",
+                                  "General",
+                                  (category) => {
+                                    onCreateBoard({ 
+                                      title: title.trim(), 
+                                      workspaceId: ws._id, 
+                                      category: category.trim() || "General" 
+                                    });
+                                  }
+                                );
+                              }
                             }
                           );
                         } else {
-                          const name = prompt("Rename workspace:", ws.name);
-                          if (name) renameWorkspaceMutation.mutate({ id: ws._id, name });
+                          const title = prompt(`New board name for ${ws.name}:`);
+                          const category = prompt(`Category (optional):`, "General");
+                          if (title) onCreateBoard({ title, workspaceId: ws._id, category });
                         }
                       }}
-                      className="p-3 bg-white/[0.04] border border-white/[0.12] hover:bg-white/10 rounded-2xl text-slate-400 hover:text-white transition-all"
+                      className="px-8 py-3.5 bg-accent-blue text-white text-[0.65rem] font-bold rounded-2xl uppercase tracking-[0.2em] transition-all shadow-glow flex items-center gap-3 hover:bg-indigo-500"
                     >
-                      <Edit3 size={18} />
+                      <Plus size={18} /> Create Board
                     </button>
-                   <button 
-                     onClick={() => {
-                       if (confirm(`Terminate workspace "${ws.name}"?`)) deleteWorkspaceMutation.mutate(ws._id);
-                     }}
-                     className="p-3 bg-white/[0.04] border border-white/[0.12] hover:bg-red-500/10 rounded-2xl text-slate-400 hover:text-red-500 transition-all"
-                   >
-                     <Trash2 size={18} />
-                   </button>
-                 </div>
-                 <div className="w-[1px] h-10 bg-white/10 mx-2" />
-                  <button 
-                    onClick={() => {
-                      if (window.showPremiumPrompt) {
-                        window.showPremiumPrompt(
-                          "New Board",
-                          `New board name for ${ws.name}...`,
-                          "",
-                          (title) => {
-                            if (title.trim()) {
-                              window.showPremiumPrompt(
-                                "Board Category",
-                                "Category (optional):",
-                                "General",
-                                (category) => {
-                                  onCreateBoard({ 
-                                    title: title.trim(), 
-                                    workspaceId: ws._id, 
-                                    category: category.trim() || "General" 
-                                  });
-                                }
-                              );
-                            }
-                          }
-                        );
-                      } else {
-                        const title = prompt(`New board name for ${ws.name}:`);
-                        const category = prompt(`Category (optional):`, "General");
-                        if (title) onCreateBoard({ title, workspaceId: ws._id, category });
-                      }
-                    }}
-                    className="px-8 py-3.5 bg-accent-blue text-white text-[0.65rem] font-bold rounded-2xl uppercase tracking-[0.2em] transition-all shadow-glow flex items-center gap-3 hover:bg-indigo-500"
-                  >
-                    <Plus size={18} /> Create Board
-                  </button>
+                  )}
               </div>
             </div>
  
@@ -385,17 +400,19 @@ export const WorkspaceHub = ({ onBoardSelect, onViewChange, onCreateBoard }) => 
                         Create a board to start managing your projects, lists, and tasks.
                       </p>
                     </div>
-                    <button 
-                      onClick={() => {
-                        setActiveWorkspaceIdForTemplate(ws._id);
-                        setNewBoardTitle('');
-                        setNewBoardCategory('General');
-                        setSelectedTemplateId(null);
-                      }}
-                      className="px-10 py-4 bg-accent-blue text-white text-[0.7rem] font-bold rounded-2xl transition-all shadow-glow hover:bg-indigo-500 uppercase tracking-[0.2em]"
-                    >
-                      + Create Board
-                    </button>
+                    {canCreateBoard && (
+                      <button 
+                        onClick={() => {
+                          setActiveWorkspaceIdForTemplate(ws._id);
+                          setNewBoardTitle('');
+                          setNewBoardCategory('General');
+                          setSelectedTemplateId(null);
+                        }}
+                        className="px-10 py-4 bg-accent-blue text-white text-[0.7rem] font-bold rounded-2xl transition-all shadow-glow hover:bg-indigo-500 uppercase tracking-[0.2em]"
+                      >
+                        + Create Board
+                      </button>
+                    )}
                   </div>
                   
                   <div className="relative group-hover:scale-105 transition-transform duration-1000">
@@ -409,7 +426,7 @@ export const WorkspaceHub = ({ onBoardSelect, onViewChange, onCreateBoard }) => 
                 </div>
               )}
           </motion.div>
-        ))}`
+        )})}
       </div>
 
       <AnimatePresence>

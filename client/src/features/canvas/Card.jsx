@@ -78,13 +78,13 @@ export const Card = ({ card, onSelect, isDragging, onDragStart, onDragEnd, isVie
       {/* The Actual Draggable Card */}
       <motion.div
         layoutId={card._id || card.id}
-        drag={!isViewer}
+        drag={!isViewer && !card._id?.toString().startsWith('temp-')}
         dragElastic={0.08}
         dragConstraints={{ left: 0, right: 0, top: 0, bottom: 0 }}
         data-card-id={card._id || card.id}
         onDragStart={() => onDragStart(card._id || card.id)}
         onDragEnd={(event, info) => onDragEnd(card._id || card.id, info)}
-        onClick={() => !isDragging && onSelect(card)}
+        onClick={() => !isDragging && !card._id?.toString().startsWith('temp-') && onSelect(card)}
         whileDrag={{ 
           scale: 1.04, 
           rotate: 1.5,
@@ -93,10 +93,10 @@ export const Card = ({ card, onSelect, isDragging, onDragStart, onDragEnd, isVie
           cursor: 'grabbing',
           pointerEvents: 'none'
         }}
-        whileHover={{ y: -2 }}
+        whileHover={card._id?.toString().startsWith('temp-') ? {} : { y: -2 }}
         transition={{ type: "spring", stiffness: 450, damping: 32 }}
         className={`bg-surface/75 backdrop-blur-2xl border border-white/[0.12] rounded-2xl relative select-none transition-all duration-300 hover:bg-surface/95 hover:border-white/[0.22] group shadow-sm hover:shadow-glow ${
-          isViewer ? 'cursor-pointer' : 'cursor-grab'
+          isViewer ? 'cursor-pointer' : (card._id?.toString().startsWith('temp-') ? 'cursor-wait opacity-60' : 'cursor-grab')
         } ${
           isDragging ? 'opacity-0' : 'opacity-100'
         }`}
