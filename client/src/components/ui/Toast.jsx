@@ -1,8 +1,8 @@
-import { useState, useCallback } from 'react';
+import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { CheckCircle, XCircle, Info, X } from 'lucide-react';
 
-// Global toast queue
+// Global toast queue — module-level so showToast works from anywhere
 let toastListeners = [];
 let toastIdCounter = 0;
 
@@ -15,8 +15,8 @@ export const showToast = (message, type = 'success', duration = 4000) => {
 export const ToastContainer = () => {
   const [toasts, setToasts] = useState([]);
 
-  // Register this container as a listener
-  useState(() => {
+  // Register this container as a listener using useEffect (not useState)
+  useEffect(() => {
     const listener = (toast) => {
       setToasts(prev => [...prev, toast]);
       setTimeout(() => {
@@ -27,7 +27,7 @@ export const ToastContainer = () => {
     return () => {
       toastListeners = toastListeners.filter(fn => fn !== listener);
     };
-  });
+  }, []); // Only register once on mount
 
   const icons = {
     success: <CheckCircle size={16} className="text-emerald-400 shrink-0" />,
