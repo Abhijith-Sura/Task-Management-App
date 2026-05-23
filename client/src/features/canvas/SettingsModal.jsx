@@ -3,6 +3,7 @@ import { X, UserPlus, Trash2, Shield, Settings, User, Zap, ToggleLeft, ToggleRig
 import { motion, AnimatePresence } from 'framer-motion';
 import api from '../../services/api';
 import { useQueryClient } from '@tanstack/react-query';
+import { showToast } from '../../components/ui/Toast';
 
 export const SettingsModal = ({ 
   board, 
@@ -147,12 +148,12 @@ export const SettingsModal = ({
     try {
       const result = await onCreateInvitation(inviteEmail, inviteRole);
       setEmailStatus({ type: 'success', message: `Invitation sent to: ${inviteEmail}` });
+      showToast(`Invitation email sent to ${inviteEmail}`, 'success');
       setInviteEmail('');
     } catch (err) {
-      setEmailStatus({ 
-        type: 'error', 
-        message: err.response?.data?.message || err.message || 'Failed to send invitation. Please try again.' 
-      });
+      const msg = err.response?.data?.message || err.message || 'Failed to send invitation. Please try again.';
+      setEmailStatus({ type: 'error', message: msg });
+      showToast(msg, 'error');
     } finally {
       setTimeout(() => setEmailStatus({ type: '', message: '' }), 5000);
     }

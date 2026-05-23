@@ -15,6 +15,7 @@ import { Auth } from './features/auth/Auth';
 import { isAuthenticated, logout } from './features/auth/AuthService';
 import { NotificationHub } from './features/notifications/NotificationHub';
 import { PremiumPromptModal } from './components/ui/PremiumPromptModal';
+import { ToastContainer, showToast } from './components/ui/Toast';
 import { Terminal, Settings, Activity, LogOut, Plus, ShieldAlert, Bell, HardDrive, Box, Hash } from 'lucide-react';
 import api from './services/api';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
@@ -262,6 +263,7 @@ function App() {
         }, ...prev]);
         
         await queryClient.invalidateQueries({ queryKey: ['boards'] });
+        await queryClient.invalidateQueries({ queryKey: ['board-invitations'] });
         
         const joinedBoardId = data.data.boardId;
         setActiveBoardId(joinedBoardId);
@@ -269,6 +271,11 @@ function App() {
         sessionStorage.removeItem('pendingInviteToken');
         sessionStorage.removeItem('pendingInviteIsIndividual');
         window.history.replaceState({}, document.title, '/');
+
+        // Show welcome toast after a short delay so the board has time to render
+        setTimeout(() => {
+          showToast('Welcome to the board! You now have access to collaborate.', 'success', 6000);
+        }, 800);
       }
     } catch (err) {
       console.error("Failed to join board via token:", err);
@@ -587,6 +594,9 @@ function App() {
           />
         )}
       </AnimatePresence>
+
+      {/* Global Toast Notifications */}
+      <ToastContainer />
     </AppShell>
   );
 }

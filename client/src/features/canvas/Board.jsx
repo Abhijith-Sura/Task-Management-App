@@ -2,18 +2,21 @@ import React, { useRef, useState, useEffect, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Column } from './Column';
 import { useBoardData } from './useBoardData';
-import { Terminal, ShieldCheck, Activity, Search, Settings, Layout, List as ListIcon, Calendar as CalendarIcon, Edit3, Trash2, Zap as ZapIcon, Plus, Clock } from 'lucide-react';
+import { MemberPanel } from './MemberPanel';
+import { Terminal, ShieldCheck, Activity, Search, Settings, Layout, List as ListIcon, Calendar as CalendarIcon, Edit3, Trash2, Zap as ZapIcon, Plus, Clock, Users } from 'lucide-react';
 import { TaskDrawer } from '../drawer/TaskDrawer';
 import { SettingsModal } from './SettingsModal';
 import { TableView } from './TableView';
 import { CalendarView } from './CalendarView';
 import { TimelineView } from './TimelineView';
+import { showToast } from '../../components/ui/Toast';
 import api from '../../services/api';
 import offlineSyncService from '../../services/offlineSync';
 
 export const Board = ({ boardId, onViewChange }) => {
   const [selectedTask, setSelectedTask] = useState(null);
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
+  const [isMemberPanelOpen, setIsMemberPanelOpen] = useState(false);
   const [viewType, setViewType] = useState('kanban'); // 'kanban', 'table', 'calendar'
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedLabels, setSelectedLabels] = useState([]);
@@ -397,25 +400,62 @@ export const Board = ({ boardId, onViewChange }) => {
         <div className="flex flex-wrap items-center gap-6">
           {/* Members Suite */}
           <div className="flex items-center gap-4">
-            <div className="flex -space-x-3">
-              {members?.slice(0, 4).map((m, i) => (
-                <motion.div 
-                  key={i} 
-                  whileHover={{ y: -4, scale: 1.1 }}
-                  className="w-10 h-10 rounded-2xl border-2 border-background bg-slate-900 flex items-center justify-center text-[0.7rem] font-bold text-accent-blue shadow-glow relative overflow-hidden"
-                >
-                  {m.avatar ? <img src={m.avatar} className="w-full h-full object-cover" /> : m.name?.charAt(0).toUpperCase()}
-                  <div className="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent" />
-                </motion.div>
-              ))}
-              {members?.length > 4 && (
-                <div className="w-10 h-10 rounded-2xl border-2 border-background bg-white/[0.04] backdrop-blur-md flex items-center justify-center text-[0.6rem] font-bold text-slate-400">
-                  +{members.length - 4}
-                </div>
-              )}
+            <div className="relative">
+              {/* Clickable member avatars */}
+              <button
+                onClick={() => setIsMemberPanelOpen(prev => !prev)}
+                className="flex -space-x-3 focus:outline-none"
+                title="View members"
+              >
+                {members?.slice(0, 4).map((m, i) => (
+                  <motion.div 
+                    key={i} 
+                    whileHover={{ y: -4, scale: 1.1 }}
+                    className="w-10 h-10 rounded-2xl border-2 border-background bg-slate-900 flex items-center justify-center text-[0.7rem] font-bold text-accent-blue shadow-glow relative overflow-hidden"
+                  >
+                    {m.avatar ? <img src={m.avatar} className="w-full h-full object-cover" alt={m.name} /> : m.name?.charAt(0).toUpperCase()}
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent" />
+                  </motion.div>
+                ))}
+                {members?.length > 4 && (
+                  <div className="w-10 h-10 rounded-2xl border-2 border-background bg-white/[0.04] backdrop-blur-md flex items-center justify-center text-[0.6rem] font-bold text-slate-400">
+                    +{members.length - 4}
+                  </div>
+                )}
+                {members?.length === 0 && (
+                  <div className="w-10 h-10 rounded-2xl border-2 border-background bg-white/[0.04] flex items-center justify-center">
+                    <Users size={14} className="text-slate-500" />
+                  </div>
+                )}
+              </button>
+
+              {/* Member Panel Popup */}
+              <AnimatePresence>
+                {isMemberPanelOpen && (
+                  <MemberPanel
+                    members={members}
+                    owner={owner}
+                    isOwner={isOwner}
+                    onClose={() => setIsMemberPanelOpen(false)}
+                    onRemoveMember={async (memberId) => {
+                      if (!window.confirm('Remove this member from the board?')) return;
+                      try {
+                        const workspaceId = board?.workspaceId?._id || board?.workspaceId;
+                        await api.delete(`/workspaces/${workspaceId}/members/${memberId}`);
+                        showToast('Member removed from board', 'success');
+                        setIsMemberPanelOpen(false);
+                        // Refresh board data
+                        window.location.reload();
+                      } catch (err) {
+                        showToast(err?.response?.data?.message || 'Failed to remove member', 'error');
+                      }
+                    }}
+                  />
+                )}
+              </AnimatePresence>
             </div>
             <button 
-              onClick={() => {
+              onClick={async () => {
                 if (window.showPremiumPrompt) {
                   window.showPremiumPrompt(
                     "Invite Collaborator",
@@ -425,8 +465,9 @@ export const Board = ({ boardId, onViewChange }) => {
                       if (email.trim()) {
                         try {
                           await createInvitation(email.trim(), 'editor');
+                          showToast(`Invitation email sent to ${email.trim()}`, 'success');
                         } catch (err) {
-                          alert(err?.response?.data?.message || 'Failed to send invitation');
+                          showToast(err?.response?.data?.message || 'Failed to send invitation', 'error');
                         }
                       }
                     },
@@ -435,9 +476,12 @@ export const Board = ({ boardId, onViewChange }) => {
                 } else {
                   const email = prompt("Enter email address to send a board invitation:");
                   if (email) {
-                    createInvitation(email.trim(), 'editor').catch(err =>
-                      alert(err?.response?.data?.message || 'Failed to send invitation')
-                    );
+                    try {
+                      await createInvitation(email.trim(), 'editor');
+                      showToast(`Invitation email sent to ${email.trim()}`, 'success');
+                    } catch (err) {
+                      showToast(err?.response?.data?.message || 'Failed to send invitation', 'error');
+                    }
                   }
                 }
               }}
