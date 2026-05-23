@@ -75,7 +75,10 @@ export const WorkspaceHub = ({ onBoardSelect, onViewChange, onCreateBoard }) => 
     mutationFn: async (id) => {
       await api.delete(`/boards/${id}`);
     },
-    onSuccess: () => queryClient.invalidateQueries(['boards'])
+    onSuccess: () => {
+      queryClient.invalidateQueries(['boards']);
+      queryClient.invalidateQueries(['workspaces']);
+    }
   });
 
   const renameBoardMutation = useMutation({
@@ -92,7 +95,10 @@ export const WorkspaceHub = ({ onBoardSelect, onViewChange, onCreateBoard }) => 
     mutationFn: async (id) => {
       await api.delete(`/workspaces/${id}`);
     },
-    onSuccess: () => queryClient.invalidateQueries(['workspaces'])
+    onSuccess: () => {
+      queryClient.invalidateQueries(['workspaces']);
+      queryClient.invalidateQueries(['boards']);
+    }
   });
 
   const renameWorkspaceMutation = useMutation({
@@ -393,7 +399,7 @@ export const WorkspaceHub = ({ onBoardSelect, onViewChange, onCreateBoard }) => 
                       </motion.div>
                     ))}
                   </div>   </div>
-              ))}`
+              ))}
             </div>
 
               {ws.totalBoards === 0 && (

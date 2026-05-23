@@ -95,7 +95,9 @@ export const requireRole = (allowedRoles) => async (req, res, next) => {
 
     const workspace = await Workspace.findById(workspaceId).lean();
     if (!workspace) {
-      return res.status(404).json({ success: false, message: "Workspace not found" });
+      // Workspace was deleted but board still references it -- fall through
+      // so the controller can handle the missing resource gracefully
+      return next();
     }
 
     // Owner gets absolute admin access

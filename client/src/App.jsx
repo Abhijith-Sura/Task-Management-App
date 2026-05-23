@@ -363,6 +363,16 @@ function App() {
     if (boards && boards.length > 0 && !activeBoardId) {
       setActiveBoardId(boards[0]._id);
     }
+    // If the active board was deleted and is no longer in the list, reset
+    if (activeBoardId && boards && boards.length > 0 && !boards.find(b => b._id === activeBoardId)) {
+      setActiveBoardId(boards[0]._id);
+      setCurrentView('dashboard');
+    }
+    // If there are no boards at all, clear the active board
+    if (boards && boards.length === 0 && activeBoardId) {
+      setActiveBoardId(null);
+      setCurrentView('dashboard');
+    }
   }, [boards, activeBoardId]);
 
   // Global Notification Listener

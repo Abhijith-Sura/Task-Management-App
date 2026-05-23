@@ -1,5 +1,8 @@
 import Workspace from "../models/Workspace.js";
 import Board from "../models/Board.js";
+import List from "../models/List.js";
+import Card from "../models/Card.js";
+import Invitation from "../models/Invitation.js";
 import asyncHandler from "../utils/asyncHandler.js";
 import { successResponse, errorResponse } from "../utils/apiResponse.js";
 
@@ -66,9 +69,28 @@ export const updateWorkspace = asyncHandler(async (req, res) => {
  * @desc    Delete workspace
  */
 export const deleteWorkspace = asyncHandler(async (req, res) => {
-  await Workspace.findByIdAndDelete(req.params.id);
-  // Also cleanup boards? (Usually optional or prompt user)
-  return successResponse(res, null, "Workspace deleted");
+  const workspaceId = req.params.id;
+
+  // Find all boards belonging to this workspace
+  const boards = await Board.find({ workspaceId }).select("_id").lean();
+  const boardIds = boards.map(b => b._id);
+
+  if (boardIds.length > 0) {
+    // Find all lists belonging to those boards
+    const lists = await List.find({ boardId: { $in: boardIds } }).select("_id").lean();
+    const listIds = lists.map(l => l._id);
+
+    // Cascade delete: cards -> lists -> invitations -> boards
+    if (listIds.length > 0) {
+      await Card.deleteMany({ listId: { $in: listIds } });
+      await List.deleteMany({ boardId: { $in: boardIds } });
+    }
+    await Invitation.deleteMany({ boardId: { $in: boardIds } });
+    await Board.deleteMany({ workspaceId });
+  }
+
+  await Workspace.findByIdAndDelete(workspaceId);
+  return successResponse(res, null, "Workspace and all associated boards deleted successfully");
 });
 
 /**
