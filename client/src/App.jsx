@@ -56,7 +56,7 @@ const Sidebar = ({ boards, onBoardSelect, activeBoardId, currentView, onViewChan
           </button>
         </div>
  
-        <nav className="space-y-10">
+        <nav className="flex-1 overflow-y-auto space-y-10 scrollbar-none pr-1">
           {/* Main Navigation - High Density */}
           <div className="space-y-2">
             <SidebarItem 

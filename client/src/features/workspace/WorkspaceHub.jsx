@@ -190,13 +190,22 @@ export const WorkspaceHub = ({ onBoardSelect, onViewChange, onCreateBoard }) => 
 
       <div className="grid grid-cols-1 gap-24">
         {groupedWorkspaces.map((ws, idx) => {
-          const wsOwnerId = ws.owner?._id || ws.owner || '';
           const currentUserId = currentUser._id || currentUser.id || '';
-          const isOwner = currentUserId && wsOwnerId && wsOwnerId.toString() === currentUserId.toString();
+          const currentUserEmail = currentUser.email || '';
+          
+          const wsOwnerId = ws.owner?._id || ws.owner || '';
+          const wsOwnerEmail = ws.owner?.email || '';
+          
+          const isOwner = (currentUserEmail && wsOwnerEmail && wsOwnerEmail.toLowerCase() === currentUserEmail.toLowerCase()) ||
+                          (currentUserId && wsOwnerId && wsOwnerId.toString() === currentUserId.toString());
+                          
           const memberInfo = ws.members?.find(m => {
-            const mId = m.user?._id || m.user || '';
-            return mId && mId.toString() === currentUserId.toString();
+            const mUserId = m.user?._id || m.user || '';
+            const mUserEmail = m.user?.email || '';
+            return (currentUserEmail && mUserEmail && mUserEmail.toLowerCase() === currentUserEmail.toLowerCase()) ||
+                   (currentUserId && mUserId && mUserId.toString() === currentUserId.toString());
           });
+          
           const isAdmin = isOwner || memberInfo?.role === 'admin';
           const canCreateBoard = isOwner || memberInfo?.role === 'admin' || memberInfo?.role === 'editor';
 
