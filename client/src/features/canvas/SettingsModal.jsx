@@ -10,6 +10,7 @@ export const SettingsModal = ({
   members, 
   owner, 
   onUpdateBoard, 
+  onDeleteBoard,
   onInviteMember, 
   onClose, 
   automations = [],
@@ -34,6 +35,7 @@ export const SettingsModal = ({
 
   // Rule Builder States
   const [ruleName, setRuleName] = useState('');
+  const [triggerType, setTriggerType] = useState('CARD_MOVED');
   const [triggerListId, setTriggerListId] = useState('');
   const [actionType, setActionType] = useState('SET_PRIORITY');
   const [actionListId, setActionListId] = useState('');
@@ -56,6 +58,7 @@ export const SettingsModal = ({
 
   const currentUserRole = isOwner ? 'admin' : findWorkspaceRole(currentUser._id);
   const canManageRoles = currentUserRole === 'admin';
+  const canManageInviteLink = isOwner || currentUserRole === 'admin' || currentUserRole === 'editor';
 
   const handleUpdateRole = async (memberId, role) => {
     try {
@@ -89,7 +92,7 @@ export const SettingsModal = ({
   };
 
   useEffect(() => {
-    if (isOwner && board?._id) {
+    if (canManageInviteLink && board?._id) {
       fetchInviteLink();
     }
   }, [board?._id]);
@@ -192,14 +195,14 @@ export const SettingsModal = ({
 
   const handleCreateRule = async (e) => {
     e.preventDefault();
-    if (!ruleName.trim() || !triggerListId) return;
+    if (!ruleName.trim() || (triggerType === 'CARD_MOVED' && !triggerListId)) return;
 
     try {
       const payload = {
         name: ruleName,
         trigger: {
-          type: "CARD_MOVED",
-          targetListId: triggerListId
+          type: triggerType,
+          targetListId: triggerType === "CARD_MOVED" ? triggerListId : undefined
         },
         action: {
           type: actionType,
@@ -211,6 +214,7 @@ export const SettingsModal = ({
 
       await onCreateAutomation(payload);
       setRuleName('');
+      setTriggerType('CARD_MOVED');
       setTriggerListId('');
       setActionListId('');
       setActionAssigneeId('');
@@ -508,7 +512,7 @@ export const SettingsModal = ({
               </section>
 
               {/* Section 3: Board Invite Link */}
-              {isOwner && (
+              {canManageInviteLink && (
                 <section className="p-6 bg-white/[0.01] border border-white/[0.03] rounded-2xl relative overflow-hidden group">
                   <div className="absolute top-0 right-0 w-32 h-32 bg-accent-blue/[0.02] blur-[40px] pointer-events-none" />
                   
@@ -559,6 +563,28 @@ export const SettingsModal = ({
                   </div>
                 </section>
               )}
+
+              {/* Section 4: Danger Zone */}
+              {(isOwner || currentUserRole === 'admin') && (
+                <section className="p-6 bg-red-500/5 border border-red-500/10 rounded-2xl relative overflow-hidden group">
+                  <div className="flex justify-between items-center mb-4">
+                    <div>
+                      <h4 className="font-mono text-[0.7rem] text-red-500 font-bold uppercase tracking-[0.2em]">Danger Zone</h4>
+                      <p className="font-mono text-[0.55rem] text-slate-500 mt-1 leading-relaxed">
+                        Permanently delete this board, its columns, cards, activities, and all uploaded attachments.
+                      </p>
+                    </div>
+                  </div>
+
+                  <button 
+                    onClick={onDeleteBoard}
+                    className="w-full md:w-auto px-6 py-3 bg-red-600/10 hover:bg-red-600 text-red-500 hover:text-white border border-red-500/20 hover:border-red-600 rounded-lg transition-all font-mono text-[0.65rem] font-bold flex items-center justify-center gap-2 tracking-widest uppercase hover:shadow-[0_0_15px_rgba(239,68,68,0.2)] active:scale-95"
+                  >
+                    <Trash2 size={14} />
+                    <span>Delete Board</span>
+                  </button>
+                </section>
+              )}
             </div>
           )}
 
@@ -600,21 +626,41 @@ export const SettingsModal = ({
 
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                       <div>
-                        <label className="block font-mono text-[0.55rem] text-[#A1A1AA] uppercase tracking-wider mb-1.5">Trigger: When card moves to</label>
+                        <label className="block font-mono text-[0.55rem] text-[#A1A1AA] uppercase tracking-wider mb-1.5">Trigger Event</label>
                         <select
-                          required
-                          value={triggerListId}
-                          onChange={(e) => setTriggerListId(e.target.value)}
+                          value={triggerType}
+                          onChange={(e) => setTriggerType(e.target.value)}
                           className="w-full bg-background border border-border rounded px-3 py-2 font-mono text-xs text-[#FAFAFA] focus:border-accent-blue focus:outline-none"
                         >
-                          <option value="">Select list...</option>
-                          {board?.lists?.map(l => (
-                            <option key={l._id} value={l._id}>{l.title}</option>
-                          ))}
+                          <option value="CARD_MOVED">Card Moved to List</option>
+                          <option value="CHECKLIST_COMPLETED">All Checklist Items Completed</option>
                         </select>
                       </div>
 
-                      <div>
+                      {triggerType === 'CARD_MOVED' ? (
+                        <div>
+                          <label className="block font-mono text-[0.55rem] text-[#A1A1AA] uppercase tracking-wider mb-1.5">When card moves to</label>
+                          <select
+                            required
+                            value={triggerListId}
+                            onChange={(e) => setTriggerListId(e.target.value)}
+                            className="w-full bg-background border border-border rounded px-3 py-2 font-mono text-xs text-[#FAFAFA] focus:border-accent-blue focus:outline-none"
+                          >
+                            <option value="">Select list...</option>
+                            {board?.lists?.map(l => (
+                              <option key={l._id} value={l._id}>{l.title}</option>
+                            ))}
+                          </select>
+                        </div>
+                      ) : (
+                        <div className="flex items-end pb-1.5">
+                          <span className="font-mono text-[0.6rem] text-slate-500 italic">Triggers when all items in all checklists on a card are completed.</span>
+                        </div>
+                      )}
+                    </div>
+
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div className="md:col-span-2">
                         <label className="block font-mono text-[0.55rem] text-[#A1A1AA] uppercase tracking-wider mb-1.5">Action: Executed operation</label>
                         <select
                           required
@@ -732,7 +778,11 @@ export const SettingsModal = ({
                               )}
                             </div>
                             <div className="font-mono text-[0.6rem] text-[#A1A1AA] space-y-0.5">
-                              <div>Trigger: Card moved to "{triggerList?.title || 'Any List'}"</div>
+                              <div>
+                                Trigger: {rule.trigger.type === "CHECKLIST_COMPLETED" 
+                                  ? "All checklist items completed" 
+                                  : `Card moved to "${triggerList?.title || 'Any List'}"`}
+                              </div>
                               <div className="text-accent-blue">Operation: {actionDetail}</div>
                             </div>
                           </div>

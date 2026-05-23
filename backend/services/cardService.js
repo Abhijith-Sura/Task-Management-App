@@ -138,14 +138,28 @@ class CardService {
 
     if (updates.checklists && Array.isArray(updates.checklists)) {
       const oldLength = (oldCard.checklists || []).length;
+      const oldCompleted = (oldCard.checklists || []).filter(c => c && c.completed).length;
       const newLength = updates.checklists.length;
+      const newCompleted = updates.checklists.filter(c => c && c.completed).length;
+
       if (oldLength !== newLength) {
         changes.push(newLength > oldLength ? "added checklist item" : "removed checklist item");
       } else {
-        const oldCompleted = (oldCard.checklists || []).filter(c => c && c.completed).length;
-        const newCompleted = updates.checklists.filter(c => c && c.completed).length;
         if (oldCompleted !== newCompleted) {
           changes.push(`checklist progress to ${newCompleted}/${newLength}`);
+        }
+      }
+
+      // Check if checklist transitioned to fully completed status (at least one item, previously not completed, now completed)
+      const wasFullyCompleted = oldLength > 0 && oldCompleted === oldLength;
+      const isNowFullyCompleted = newLength > 0 && newCompleted === newLength;
+
+      if (!wasFullyCompleted && isNowFullyCompleted) {
+        const list = await List.findById(card.listId).select("boardId").lean();
+        if (list?.boardId) {
+          import("./automationService.js").then(({ default: automationService }) => {
+            automationService.evaluateRules(list.boardId, "CHECKLIST_COMPLETED", { card, listId: card.listId });
+          }).catch(err => console.error("Failed to load automation service in checklist completed trigger:", err));
         }
       }
     }

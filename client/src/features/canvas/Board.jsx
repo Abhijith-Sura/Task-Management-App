@@ -77,6 +77,17 @@ export const Board = ({ boardId, onViewChange }) => {
   const isViewer = currentUserRole === 'viewer';
   const boardRef = useRef(null);
 
+  const handleDeleteBoard = async () => {
+    if (!window.confirm("Are you sure you want to delete this board? This action is permanent and cannot be undone.")) return;
+    try {
+      await deleteBoard();
+      showToast("Board deleted successfully", "success");
+      onViewChange("dashboard");
+    } catch (err) {
+      showToast(err.response?.data?.message || err.message || "Failed to delete board", "error");
+    }
+  };
+
   // Fetch Faceted Analytics dynamically in background
   useEffect(() => {
     if (!boardId) return;
@@ -770,6 +781,7 @@ export const Board = ({ boardId, onViewChange }) => {
           members={members}
           owner={owner}
           onUpdateBoard={updateBoard}
+          onDeleteBoard={handleDeleteBoard}
           onInviteMember={inviteMember}
           automations={automations}
           onCreateAutomation={createAutomation}
