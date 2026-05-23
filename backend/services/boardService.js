@@ -40,7 +40,8 @@ class BoardService {
       title,
       workspaceId,
       owner: userId,
-      category: category || "General"
+      category: category || "General",
+      inviteToken: crypto.randomBytes(20).toString("hex")
     });
   }
 

@@ -20,6 +20,7 @@ export const useBoardData = (boardId) => {
       try {
         const { data } = await api.get(`/boards/${boardId}`);
         if (data?.success && data?.data) {
+          // Always overwrite local cache with fresh server data
           offlineSyncService.cacheBoard(boardId, data.data);
         }
         return data;
@@ -32,6 +33,10 @@ export const useBoardData = (boardId) => {
       }
     },
     enabled: !!boardId,
+    staleTime: 0,       // Never serve stale data from cache -- always re-fetch on mount
+    gcTime: 0,          // Don't keep old data in memory between board switches
+    refetchOnMount: true,
+    refetchOnWindowFocus: false,
   });
 
   const board = boardResponse?.data;
