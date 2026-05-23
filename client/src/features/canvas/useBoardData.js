@@ -36,14 +36,24 @@ export const useBoardData = (boardId) => {
 
   const board = boardResponse?.data;
 
-  // Fetch Pending Invitations Data
+  // Fetch Pending Invitations Data — only for board owners (avoids 403/500 for non-owners)
+  const currentUserId = (() => { try { return JSON.parse(localStorage.getItem('user') || '{}')._id || ''; } catch { return ''; } })();
+  const isOwner = board && currentUserId && (
+    (board.owner?._id || board.owner)?.toString() === currentUserId.toString()
+  );
+
   const { data: invitationsResponse, refetch: refetchInvitations } = useQuery({
     queryKey: ['board-invitations', boardId],
     queryFn: async () => {
-      const { data } = await api.get(`/boards/${boardId}/invitations`);
-      return data;
+      try {
+        const { data } = await api.get(`/boards/${boardId}/invitations`);
+        return data;
+      } catch (err) {
+        // Non-owners will get 403 — silently return empty array
+        return { success: true, data: [] };
+      }
     },
-    enabled: !!boardId && !!boardId,
+    enabled: !!boardId && !!isOwner,
   });
 
   const invitations = invitationsResponse?.data || [];
@@ -68,19 +78,21 @@ export const useBoardData = (boardId) => {
     socketService.joinBoard(boardId);
 
     // Listen for real-time updates from other workstations
-    socketService.onUpdateCard((data) => {
-      // Invalidate and refetch or update cache directly
+    const handleCardUpdate = () => {
       queryClient.invalidateQueries({ queryKey: ['board', boardId] });
-    });
-
-    socketService.onBoardRefresh(() => {
-      queryClient.invalidateQueries({ queryKey: ['board', boardId] });
-    });
-
-    return () => {
-      socketService.disconnect();
     };
-  }, [boardId, queryClient]);
+    const handleBoardRefresh = () => {
+      queryClient.invalidateQueries({ queryKey: ['board', boardId] });
+    };
+
+    socketService.onUpdateCard(handleCardUpdate);
+    socketService.onBoardRefresh(handleBoardRefresh);
+
+    // Only disconnect when the boardId changes, not on every render
+    return () => {
+      socketService.leaveBoard?.(boardId);
+    };
+  }, [boardId]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Mutation for moving cards (Optimistic UI)
   const moveCardMutation = useMutation({

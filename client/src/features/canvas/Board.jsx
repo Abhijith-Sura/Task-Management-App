@@ -421,18 +421,28 @@ export const Board = ({ boardId, onViewChange }) => {
                     "Invite Collaborator",
                     "Enter collaborator email...",
                     "",
-                    (email) => {
-                      if (email.trim()) inviteMember(email.trim());
+                    async (email) => {
+                      if (email.trim()) {
+                        try {
+                          await createInvitation(email.trim(), 'editor');
+                        } catch (err) {
+                          alert(err?.response?.data?.message || 'Failed to send invitation');
+                        }
+                      }
                     },
                     "email"
                   );
                 } else {
-                  const email = prompt("Enter email address of the collaborator to invite to this board:");
-                  if (email) inviteMember(email);
+                  const email = prompt("Enter email address to send a board invitation:");
+                  if (email) {
+                    createInvitation(email.trim(), 'editor').catch(err =>
+                      alert(err?.response?.data?.message || 'Failed to send invitation')
+                    );
+                  }
                 }
               }}
               className="p-2.5 bg-accent-blue/10 border border-accent-blue/20 rounded-2xl text-accent-blue hover:bg-accent-blue hover:text-white transition-all shadow-sm"
-              title="Invite Member"
+              title="Invite Member via Email"
             >
               <Plus size={18} />
             </button>
