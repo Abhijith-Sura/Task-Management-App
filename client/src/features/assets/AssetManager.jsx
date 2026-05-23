@@ -5,6 +5,7 @@ import api from '../../services/api';
 import { motion } from 'framer-motion';
 
 export const AssetManager = () => {
+  const API_BASE = import.meta.env.VITE_API_URL?.replace('/api', '') || 'http://localhost:5000';
   const [searchQuery, setSearchQuery] = useState('');
   const [filterType, setFilterType] = useState('all'); // 'all', 'image', 'document', 'other'
 
@@ -128,7 +129,7 @@ export const AssetManager = () => {
             <div className="aspect-[4/3] bg-background flex items-center justify-center relative overflow-hidden">
               {asset.name.match(/\.(jpg|jpeg|png|gif|webp)$/i) ? (
                 <img 
-                  src={`http://localhost:5000${asset.url}`} 
+                  src={`${API_BASE}${asset.url}`} 
                   alt={asset.name}
                   className="w-full h-full object-cover opacity-80 group-hover:opacity-100 transition-opacity duration-500 group-hover:scale-105"
                 />
@@ -140,7 +141,7 @@ export const AssetManager = () => {
               
               <div className="absolute inset-0 bg-background/40 backdrop-blur-sm opacity-0 group-hover:opacity-100 transition-all duration-300 flex items-center justify-center gap-3">
                 <a 
-                  href={`http://localhost:5000${asset.url}`} 
+                  href={`${API_BASE}${asset.url}`} 
                   target="_blank" 
                   rel="noopener noreferrer"
                   className="p-3 bg-accent-blue text-white rounded-xl hover:bg-indigo-600 transition-all shadow-lg shadow-accent-blue/20 active:scale-90"
@@ -149,7 +150,7 @@ export const AssetManager = () => {
                   <ExternalLink size={20} />
                 </a>
                 <a 
-                  href={`http://localhost:5000${asset.url}`} 
+                  href={`${API_BASE}${asset.url}`} 
                   download
                   className="p-3 bg-white/10 text-white rounded-xl hover:bg-white/20 transition-all active:scale-90"
                   title="Download File"
