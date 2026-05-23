@@ -44,8 +44,8 @@ router.delete("/:id", authMiddleware, requireRole(["admin"]), deleteBoard);
 router.get("/:id/activity", authMiddleware, requireRole(["admin", "editor", "viewer"]), getBoardActivity);
 router.get("/:id/search", authMiddleware, requireRole(["admin", "editor", "viewer"]), searchBoardCards);
 
-router.get("/:id/invite-link", authMiddleware, requireRole(["admin", "editor"]), generateInviteLink);
-router.post("/:id/invite-link/reset", authMiddleware, requireRole(["admin", "editor"]), resetInviteLink);
+router.get("/:id/invite-link", authMiddleware, generateInviteLink);
+router.post("/:id/invite-link/reset", authMiddleware, resetInviteLink);
 router.post("/join/:token", authMiddleware, joinViaLink); // Joining does not check active workspace roles since you're new!
 router.post("/:id/invite-email", authMiddleware, requireRole(["admin"]), sendInviteEmail);
 

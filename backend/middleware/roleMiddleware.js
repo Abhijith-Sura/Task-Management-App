@@ -123,7 +123,11 @@ export const requireRole = (allowedRoles) => async (req, res, next) => {
 
     next();
   } catch (error) {
-    console.error("🔒 RBAC_MIDDLEWARE_ERROR:", error);
-    res.status(500).json({ success: false, message: "Internal server error during role validation" });
+    console.error("🔒 RBAC_MIDDLEWARE_ERROR:", error.message, error.stack);
+    res.status(500).json({ 
+      success: false, 
+      message: "Internal server error during role validation",
+      detail: process.env.NODE_ENV === "development" ? error.message : undefined
+    });
   }
 };
