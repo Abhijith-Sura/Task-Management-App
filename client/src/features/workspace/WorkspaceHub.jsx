@@ -33,6 +33,7 @@ const BOARD_TEMPLATES = [
 
 export const WorkspaceHub = ({ onBoardSelect, onViewChange, onCreateBoard }) => {
   const queryClient = useQueryClient();
+  const currentUser = JSON.parse(localStorage.getItem('user') || '{}');
   const [isCreatingWorkspace, setIsCreatingWorkspace] = useState(false);
   const [newWorkspaceName, setNewWorkspaceName] = useState('');
 
