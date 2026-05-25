@@ -5,19 +5,24 @@ import { successResponse } from "../utils/apiResponse.js";
 import bcrypt from "bcryptjs";
 
 /**
- * @desc    Get user profile and stats
+ * Retrieves the profile and statistical data for the currently authenticated user.
+ * 
+ * @param {Object} req - The Express request object.
+ * @param {Object} res - The Express response object.
+ * @returns {Promise<void>} Resolves when the user profile and stats are successfully sent.
  */
 export const getProfile = asyncHandler(async (req, res) => {
+  // Exclude the password field to prevent sensitive data exposure
   const user = await User.findById(req.user.id).select("-password");
   if (!user) throw new Error("User not found");
   
-  // Aggregate stats
+  // Retrieve all cards where the user is listed as an assignee
   const assignedCards = await Card.find({ assignees: req.user.id });
   const total = assignedCards.length;
+  // Calculate the number of high-priority tasks assigned to the user
   const highPriority = assignedCards.filter(c => c.priority === "high").length;
   
-  // Simplified efficiency: based on cards created vs completed (if we had a status)
-  // For now, let's just return what we have
+  // Compile basic efficiency and productivity statistics for the dashboard
   const stats = {
     totalTasks: total,
     highPriorityTasks: highPriority,
@@ -28,16 +33,22 @@ export const getProfile = asyncHandler(async (req, res) => {
 });
 
 /**
- * @desc    Update user profile
+ * Updates the user's profile details including name, email, avatar, and password.
+ * 
+ * @param {Object} req - The Express request object containing the profile update payload.
+ * @param {Object} res - The Express response object.
+ * @returns {Promise<void>} Resolves when the updated profile is sent back.
  */
 export const updateProfile = asyncHandler(async (req, res) => {
   const { name, email, avatar, password } = req.body;
   const user = await User.findById(req.user.id);
 
+  // Selectively apply updates based on the provided fields
   if (name) user.name = name;
   if (email) user.email = email;
   if (avatar) user.avatar = avatar;
   
+  // Securely hash the new password if it is being updated
   if (password) {
     const salt = await bcrypt.genSalt(10);
     user.password = await bcrypt.hash(password, salt);
@@ -45,6 +56,7 @@ export const updateProfile = asyncHandler(async (req, res) => {
 
   await user.save();
   
+  // Strip the password before returning the updated user object to the client
   const updatedUser = user.toObject();
   delete updatedUser.password;
 
@@ -52,13 +64,14 @@ export const updateProfile = asyncHandler(async (req, res) => {
 });
 
 /**
- * @desc    Get all files/assets for the user across all boards
+ * Aggregates all file attachments from cards the user has access to across all boards.
+ * 
+ * @param {Object} req - The Express request object.
+ * @param {Object} res - The Express response object.
+ * @returns {Promise<void>} Resolves when the extracted asset metadata is returned.
  */
 export const getUserAssets = asyncHandler(async (req, res) => {
-  // Find all cards where user is an assignee OR owner of the board?
-  // Let's keep it simple: All cards the user can see (i.e. boards they are members of)
-  // Actually, let's just find all cards that have attachments
-  // and then filter by board membership in the query
+  // Retrieve all cards that have at least one attachment, populated with their parent board data
   const cards = await Card.find({ "attachments.0": { $exists: true } })
     .populate({
       path: "listId",
@@ -67,10 +80,12 @@ export const getUserAssets = asyncHandler(async (req, res) => {
 
   const assets = [];
   cards.forEach(card => {
-    // Check if user has access to this board
     const board = card.listId?.boardId;
+    
+    // Ensure the current user has read permissions for the board containing the asset
     if (board && (board.owner.toString() === req.user.id || board.members.includes(req.user.id))) {
       card.attachments.forEach(asset => {
+        // Flatten and contextualize the attachment data for the asset library view
         assets.push({
           ...asset.toObject(),
           cardId: card._id,

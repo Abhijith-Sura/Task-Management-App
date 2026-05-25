@@ -4,9 +4,23 @@ import api from '../../services/api';
 import { MessageSquare, Send, User, Clock } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
 
+/**
+ * CommentSection Component
+ * 
+ * Renders the comments area for a specific card, allowing users to view and add comments.
+ * It uses React Query to fetch the comments from the server.
+ *
+ * @component
+ * @param {Object} props - The component props.
+ * @param {string} props.cardId - The ID of the card to fetch and add comments for.
+ * @param {Function} props.onAddComment - Callback function triggered when a new comment is submitted.
+ * @param {boolean} props.isViewer - Indicates if the user is in view-only mode (cannot add comments).
+ * @returns {React.ReactElement} The rendered CommentSection component.
+ */
 export const CommentSection = ({ cardId, onAddComment, isViewer }) => {
   const [commentText, setCommentText] = useState('');
 
+  // Fetch comments specific to the given card
   const { data: commentsResponse, isLoading } = useQuery({
     queryKey: ['comments', cardId],
     queryFn: async () => {
@@ -18,11 +32,12 @@ export const CommentSection = ({ cardId, onAddComment, isViewer }) => {
 
   const comments = commentsResponse?.data || [];
 
+  // Form submission handler for new comments
   const handleSubmit = (e) => {
     e.preventDefault();
     if (!commentText.trim()) return;
     onAddComment(commentText);
-    setCommentText('');
+    setCommentText(''); // Clear input after submission
   };
 
   return (

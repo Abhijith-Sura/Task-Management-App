@@ -3,6 +3,16 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { Bell, X, Info, AlertTriangle, CheckCircle, Clock, User } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
 
+/**
+ * Displays a slide-out drawer containing user notifications.
+ * 
+ * @component
+ * @param {Object} props - The component props.
+ * @param {Array} props.notifications - List of notification objects to display.
+ * @param {Function} props.onClear - Callback function to clear all notifications.
+ * @param {Function} props.onClose - Callback function to close the notification drawer.
+ * @returns {JSX.Element} The rendered NotificationHub component.
+ */
 export const NotificationHub = ({ notifications, onClear, onClose }) => {
   return (
     <>

@@ -4,6 +4,21 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { useQuery } from '@tanstack/react-query';
 import api from '../../services/api';
 
+/**
+ * CommandPalette Component
+ * 
+ * A global search and command palette interface that allows users to quickly find boards,
+ * search for tasks, or execute workspace commands. Features keyboard navigation and live search.
+ *
+ * @component
+ * @param {Object} props - The component props.
+ * @param {boolean} props.isOpen - Determines whether the command palette is visible.
+ * @param {Function} props.onClose - Callback function triggered to close the command palette.
+ * @param {Array<Object>} props.boards - Array of board objects available for search and navigation.
+ * @param {Function} props.onViewChange - Callback function triggered when navigating to a different view (e.g., dashboard, settings).
+ * @param {Function} props.onBoardSelect - Callback function triggered when a board is selected from the search results.
+ * @returns {React.ReactElement|null} The rendered CommandPalette component, or null if not open.
+ */
 export const CommandPalette = ({ isOpen, onClose, boards, onViewChange, onBoardSelect }) => {
   const [query, setQuery] = useState('');
   const [selectedIndex, setSelectedIndex] = useState(0);
@@ -30,7 +45,7 @@ export const CommandPalette = ({ isOpen, onClose, boards, onViewChange, onBoardS
 
   const filteredBoards = boards.filter(b => b.title.toLowerCase().includes(query.toLowerCase()));
   
-  // Combine all searchable items
+  // Combine all searchable items (commands, boards, and task cards)
   const results = [
     ...commands.filter(c => c.label.toLowerCase().includes(query.toLowerCase())),
     ...filteredBoards.map(b => ({

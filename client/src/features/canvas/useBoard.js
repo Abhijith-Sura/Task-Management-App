@@ -8,6 +8,12 @@ const INITIAL_CARDS = [
   { id: 'task-5', columnId: 'col-4', title: 'Update documentation for API v2', comments: 8, attachments: 1, dueDate: 'May 14' },
 ];
 
+/**
+ * Custom hook managing the local state of a basic board setup (cards and columns).
+ * Primarily used for isolated/local kanban views without extensive API interactions.
+ * 
+ * @returns {Object} Board state and handlers (cards, moveCard, handleDragStart, etc.)
+ */
 export const useBoard = () => {
   const [cards, setCards] = useState(INITIAL_CARDS);
   const [activeCardId, setActiveCardId] = useState(null);

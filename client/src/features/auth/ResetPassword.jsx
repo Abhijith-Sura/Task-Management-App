@@ -4,6 +4,14 @@ import { Terminal, ShieldAlert, Loader2, CheckCircle } from 'lucide-react';
 import bgControl from '../../assets/bg-control.png';
 import zenithLogo from '../../assets/zenith_logo.png';
 
+/**
+ * Component for users to set a new password using a recovery token.
+ *
+ * @param {Object} props - Component props
+ * @param {string} props.token - The password reset token from the URL
+ * @param {Function} props.onSwitchToLogin - Callback to switch the view back to the login screen
+ * @returns {React.ReactElement} The rendered Reset Password view
+ */
 export const ResetPassword = ({ token, onSwitchToLogin }) => {
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
@@ -11,6 +19,12 @@ export const ResetPassword = ({ token, onSwitchToLogin }) => {
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState(false);
 
+  /**
+   * Handles the submission of the new password form.
+   * Validates the inputs and attempts to reset the password via the backend.
+   * 
+   * @param {React.FormEvent} e - The form submission event
+   */
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError(null);

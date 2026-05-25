@@ -4,14 +4,29 @@ import api from '../../services/api';
 import { Activity, Clock, User, MessageSquare, Paperclip } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
 
+/**
+ * ActivityLog Component
+ * 
+ * Displays a chronological list of activities for either a specific board or a specific card.
+ * It periodically polls the server for new activity data.
+ *
+ * @component
+ * @param {Object} props - The component props.
+ * @param {string} [props.boardId] - The ID of the board to fetch activity for (if applicable).
+ * @param {string} [props.cardId] - The ID of the card to fetch activity for (if applicable).
+ * @returns {React.ReactElement} The rendered ActivityLog component.
+ */
 export const ActivityLog = ({ boardId, cardId }) => {
   const { data: activityResponse, isLoading } = useQuery({
+    // Cache key depends on whether we are fetching for a card or a board
     queryKey: cardId ? ['activity', 'card', cardId] : ['activity', 'board', boardId],
     queryFn: async () => {
+      // Determine the correct API endpoint based on provided IDs
       const endpoint = cardId ? `/cards/${cardId}/activity` : `/boards/${boardId}/activity`;
       const { data } = await api.get(endpoint);
       return data;
     },
+    // Only execute the query if at least one ID is present
     enabled: !!(boardId || cardId),
     refetchInterval: 5000, 
   });

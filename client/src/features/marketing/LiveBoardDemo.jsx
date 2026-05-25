@@ -33,13 +33,22 @@ const INITIAL_DEMO_DATA = {
   ]
 };
 
+/**
+ * An interactive, live demo of the Kanban board interface.
+ * Pre-populated with dummy data and supports basic search and drag-and-drop simulation.
+ *
+ * @returns {React.ReactElement} The rendered Live Board Demo view
+ */
 export const LiveBoardDemo = () => {
   const [board, setBoard] = useState(INITIAL_DEMO_DATA);
   const [viewType, setViewType] = useState('kanban');
   const [searchQuery, setSearchQuery] = useState('');
   const [isAutoPiloting, setIsAutoPiloting] = useState(true);
 
-  // AutoPilot Logic: Move a card occasionally to show movement
+  /**
+   * AutoPilot Logic: Periodically moves a card from the first list to the second list
+   * to simulate active board usage. Stops if the user interacts with the board.
+   */
   useEffect(() => {
     if (!isAutoPiloting) return;
 
@@ -62,6 +71,11 @@ export const LiveBoardDemo = () => {
     return () => clearInterval(interval);
   }, [isAutoPiloting]);
 
+  /**
+   * Filters the board lists and cards based on the current search query.
+   * 
+   * @type {Array<Object>}
+   */
   const filteredLists = useMemo(() => {
     if (!searchQuery) return board.lists;
     const query = searchQuery.toLowerCase();
@@ -74,6 +88,13 @@ export const LiveBoardDemo = () => {
     }));
   }, [board.lists, searchQuery]);
 
+  /**
+   * Handles the end of a drag-and-drop action on a card.
+   * Calculates the target column and updates the simulated board state.
+   * 
+   * @param {string} cardId - The ID of the dragged card
+   * @param {Object} info - The framer-motion drag info object containing pointer coordinates
+   */
   const onDragEnd = (cardId, info) => {
     setIsAutoPiloting(false);
     const x = info.point.x;

@@ -2,6 +2,15 @@ import React from 'react';
 import { User, Tag, Clock, CheckSquare, MessageSquare, DollarSign, Database as DatabaseIcon, Activity } from 'lucide-react';
 import { parseMetadata } from '../../utils/metadata';
 
+/**
+ * TableView Component
+ * Renders tasks in a tabular format, displaying all metadata, labels, and completion metrics.
+ * 
+ * @param {Object} props - Component props.
+ * @param {Array} props.lists - The lists containing task cards.
+ * @param {Function} props.onCardSelect - Callback when a card row is clicked.
+ * @returns {JSX.Element} The rendered table view.
+ */
 export const TableView = ({ lists, onCardSelect }) => {
   const allCards = lists.flatMap(list => 
     list.cards.map(card => ({ ...card, listTitle: list.title }))
@@ -25,6 +34,7 @@ export const TableView = ({ lists, onCardSelect }) => {
           </thead>
           <tbody className="divide-y divide-white/[0.02]">
             {allCards.map((card, idx) => {
+              // Parse markdown-style checklist items from the description to calculate progress
               const subtasks = card.description?.split('\n').filter(l => l.match(/^- \[[x ]\]/)) || [];
               const done = subtasks.filter(l => l.startsWith('- [x]')).length;
               const percent = subtasks.length > 0 ? Math.round((done / subtasks.length) * 100) : 0;

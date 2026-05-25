@@ -3,6 +3,8 @@ import Workspace from "../models/Workspace.js";
 
 /**
  * @desc    Self-healing migration to convert legacy workspace.members array to RBAC objects
+ *          Transforms flat IDs into `{ user: ObjectId, role: string }` format.
+ * @returns {Promise<void>}
  */
 export const migrateWorkspaceRoles = async () => {
   try {
@@ -17,13 +19,16 @@ export const migrateWorkspaceRoles = async () => {
         // If member is a direct ObjectId or string, it lacks the 'user' field structure
         if (!member || typeof member !== 'object' || !member.user) {
           needsMigration = true;
+          // Extract the user ID from the legacy format or malformed object
           const userId = (member && typeof member === 'object' && member._id) ? member._id : member;
           
           if (userId) {
+            // Assign 'admin' role to the workspace owner, 'editor' as default for others
             const role = userId.toString() === workspace.owner.toString() ? "admin" : "editor";
             updatedMembers.push({ user: userId, role });
           }
         } else {
+          // Member is already in the correct RBAC object format
           updatedMembers.push(member);
         }
       }

@@ -3,6 +3,15 @@ import { motion } from 'framer-motion';
 import { Zap, Shield, Layout, Activity, ChevronRight, Play, Cpu, Globe, ArrowRight } from 'lucide-react';
 import zenithLogo from '../../assets/zenith_logo.png';
 
+/**
+ * The main landing page component for the application.
+ * Highlights features, provides a hero section, and offers entry points to auth and demo.
+ *
+ * @param {Object} props - Component props
+ * @param {Function} props.onAuthClick - Callback invoked when the user clicks a login/get started button
+ * @param {Function} props.onDemoClick - Callback invoked when the user clicks the demo button
+ * @returns {React.ReactElement} The rendered Landing Page view
+ */
 export const LandingPage = ({ onAuthClick, onDemoClick }) => {
   return (
     <div className="min-h-screen bg-background text-[#FAFAFA] font-sans selection:bg-accent-blue selection:text-white overflow-x-hidden">

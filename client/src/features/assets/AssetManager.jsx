@@ -4,6 +4,13 @@ import { useQuery } from '@tanstack/react-query';
 import api from '../../services/api';
 import { motion } from 'framer-motion';
 
+/**
+ * Provides an interface to manage, search, and filter workspace assets (files, images).
+ * Displays storage limits and allows downloading/previewing of assets.
+ * 
+ * @component
+ * @returns {JSX.Element} The rendered AssetManager component.
+ */
 export const AssetManager = () => {
   const API_BASE = import.meta.env.VITE_API_URL?.replace('/api', '') || 'http://localhost:5000';
   const [searchQuery, setSearchQuery] = useState('');
@@ -19,22 +26,36 @@ export const AssetManager = () => {
 
   const allAssets = assetsResponse?.data || [];
 
+  // Filter assets based on the current search query and selected filter type
   const filteredAssets = allAssets.filter(asset => {
     const matchesSearch = asset.name.toLowerCase().includes(searchQuery.toLowerCase()) || 
                          asset.cardTitle.toLowerCase().includes(searchQuery.toLowerCase());
     
+    // Apply type filtering
     if (filterType === 'all') return matchesSearch;
     if (filterType === 'image') return matchesSearch && asset.name.match(/\.(jpg|jpeg|png|gif|webp)$/i);
     if (filterType === 'document') return matchesSearch && asset.name.match(/\.(pdf|doc|docx|txt)$/i);
     return matchesSearch;
   });
 
+  /**
+   * Determines the appropriate icon to display based on the file extension.
+   * 
+   * @param {string} filename - The name of the file to check.
+   * @returns {JSX.Element} The corresponding icon component.
+   */
   const getFileIcon = (filename) => {
     if (filename.match(/\.(jpg|jpeg|png|gif|webp)$/i)) return <ImageIcon size={20} className="text-accent-blue" />;
     if (filename.match(/\.(pdf|doc|docx|txt)$/i)) return <FileText size={20} className="text-accent-amber" />;
     return <File size={20} className="text-[#A1A1AA]" />;
   };
 
+  /**
+   * Formats a byte count into a human-readable string (KB, MB, GB).
+   * 
+   * @param {number} bytes - The size in bytes.
+   * @returns {string} The formatted size string.
+   */
   const formatSize = (bytes) => {
     if (!bytes) return '—';
     const sizes = ['B', 'KB', 'MB', 'GB'];

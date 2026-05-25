@@ -3,7 +3,13 @@ import { Bold, Italic, List, Code, Type, Maximize2, Minimize2, Eye, Edit3, Plus,
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 
-// Helper: Parse markdown string to structured JSON blocks
+/**
+ * Helper: Parse markdown string to structured JSON blocks.
+ * Converts raw markdown into manageable blocks (e.g., headings, code blocks, lists).
+ *
+ * @param {string} markdownString - The raw markdown text to parse.
+ * @returns {Array<Object>} An array of structured block objects representing the markdown content.
+ */
 const parseMarkdownToBlocks = (markdownString) => {
   if (!markdownString) {
     return [{ id: 'block-0', type: 'paragraph', content: '' }];
@@ -63,7 +69,13 @@ const parseMarkdownToBlocks = (markdownString) => {
   return cleanedBlocks.length > 0 ? cleanedBlocks : [{ id: 'block-0', type: 'paragraph', content: '' }];
 };
 
-// Helper: Compile structured JSON blocks back to standard Markdown
+/**
+ * Helper: Compile structured JSON blocks back to standard Markdown.
+ * Converts manageable blocks back into a raw markdown string.
+ *
+ * @param {Array<Object>} blocks - The array of block objects to compile.
+ * @returns {string} The compiled markdown string.
+ */
 const compileBlocksToMarkdown = (blocks) => {
   return blocks.map(block => {
     switch (block.type) {
@@ -86,6 +98,20 @@ const compileBlocksToMarkdown = (blocks) => {
   }).join('\n\n');
 };
 
+/**
+ * DescriptionEditor Component
+ * 
+ * A rich text editor for block-based editing that allows users to write and format markdown content.
+ * Supports various block types like headings, lists, code, and callouts, with a preview mode.
+ *
+ * @component
+ * @param {Object} props - The component props.
+ * @param {string} props.value - The initial markdown string to display and edit.
+ * @param {Function} [props.onChange] - Callback function triggered when the content changes.
+ * @param {Function} [props.onSave] - Callback function triggered when the content is saved.
+ * @param {boolean} props.isViewer - Indicates if the user is in view-only mode (cannot edit).
+ * @returns {React.ReactElement} The rendered DescriptionEditor component.
+ */
 export const DescriptionEditor = ({ value, onChange, onSave, isViewer }) => {
   const [isEditing, setIsEditing] = useState(false);
   const [blocks, setBlocks] = useState([]);

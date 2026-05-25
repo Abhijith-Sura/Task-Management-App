@@ -8,11 +8,18 @@ import Comment from "../models/Comment.js";
 import Board from "../models/Board.js";
 
 /**
- * @desc    Card Related Business Logic
+ * Service handling business logic for cards.
+ * Manages card creation, updates, movement, attachments, deletion, activity logging, and search.
  */
 class CardService {
   /**
-   * @desc    Create a new card
+   * Creates a new card at the bottom (highest position value) of the specified list.
+   * 
+   * @param {Object} data - The card details.
+   * @param {string|mongoose.Types.ObjectId} data.listId - The ID of the parent list.
+   * @param {string} data.title - The title of the card.
+   * @param {string|mongoose.Types.ObjectId} userId - The user creating the card.
+   * @returns {Promise<Object>} The newly created card document.
    */
   async createCard(data, userId) {
     const lastCard = await Card.findOne({ listId: data.listId }).sort("-position");
@@ -29,7 +36,14 @@ class CardService {
   }
 
   /**
-   * @desc    Update card details
+   * Updates card details, detects specific changes, handles assignee notifications,
+   * evaluates checklists, and triggers automation if completed.
+   * 
+   * @param {string|mongoose.Types.ObjectId} cardId - The ID of the card to update.
+   * @param {Object} updates - The payload containing fields to update.
+   * @param {string|mongoose.Types.ObjectId} userId - The ID of the user performing the update.
+   * @returns {Promise<Object>} The updated and populated card document.
+   * @throws {Error} If the card is not found.
    */
   async updateCard(cardId, updates, userId) {
     const oldCard = await Card.findById(cardId).lean();
@@ -89,7 +103,7 @@ class CardService {
       }
     }
 
-    // Detect exactly what changed
+    // Detect exactly what changed to build a descriptive activity log
     const changes = [];
     if (updates.title && updates.title !== oldCard.title) changes.push(`title to "${updates.title}"`);
     if (updates.priority && updates.priority !== oldCard.priority) changes.push(`priority to "${updates.priority}"`);
@@ -179,7 +193,15 @@ class CardService {
   }
 
   /**
-   * @desc    Move card to a new list or position
+   * Moves a card to a different list or reorders it within the same list.
+   * Triggers automation rules if the list changes.
+   * 
+   * @param {string|mongoose.Types.ObjectId} cardId - The ID of the card to move.
+   * @param {string|mongoose.Types.ObjectId} newListId - The ID of the target list.
+   * @param {number} newPosition - The new sorting position value.
+   * @param {string|mongoose.Types.ObjectId} userId - The ID of the user moving the card.
+   * @returns {Promise<Object>} The updated card document.
+   * @throws {Error} If the card is not found.
    */
   async moveCard(cardId, newListId, newPosition, userId) {
     const oldCard = await Card.findById(cardId).lean();
@@ -220,7 +242,12 @@ class CardService {
   }
 
   /**
-   * @desc    Add attachment to card
+   * Attaches a file metadata record to a card.
+   * 
+   * @param {string|mongoose.Types.ObjectId} cardId - The ID of the card.
+   * @param {Object} fileData - The attachment metadata (name, url, size, mimeType).
+   * @param {string|mongoose.Types.ObjectId} userId - The ID of the user adding the attachment.
+   * @returns {Promise<Object>} The updated card document.
    */
   async addAttachment(cardId, fileData, userId) {
     const card = await Card.findByIdAndUpdate(
@@ -239,7 +266,12 @@ class CardService {
   }
 
   /**
-   * @desc    Delete a card
+   * Deletes a card and cascades deletion to its associated comments and activity logs.
+   * 
+   * @param {string|mongoose.Types.ObjectId} cardId - The ID of the card to delete.
+   * @param {string|mongoose.Types.ObjectId} userId - The ID of the user requesting deletion.
+   * @returns {Promise<boolean>} True if deletion was successful.
+   * @throws {Error} If the card is not found.
    */
   async deleteCard(cardId, userId) {
     const card = await Card.findById(cardId);
@@ -253,7 +285,14 @@ class CardService {
   }
 
   /**
-   * @desc    Log card activity with board context
+   * Logs an activity record associated with a card, tracking context like the board.
+   * 
+   * @param {string|mongoose.Types.ObjectId} user - The user performing the action.
+   * @param {string} action - A human-readable description of the action.
+   * @param {string|mongoose.Types.ObjectId} cardId - The ID of the related card.
+   * @param {string|mongoose.Types.ObjectId} listId - The ID of the list to resolve board context.
+   * @param {string} [type="UPDATE"] - The classification of the activity.
+   * @param {Object} [details={}] - Additional structured data about the changes.
    */
   async logActivity(user, action, cardId, listId, type = "UPDATE", details = {}) {
     if (!user) return;
@@ -277,7 +316,12 @@ class CardService {
     }
   }
   /**
-   * @desc    Global search across all boards user has access to
+   * Performs a global search across all cards within boards the user can access.
+   * Limits results to 10 for performance.
+   * 
+   * @param {string} query - The search string to match against title or description.
+   * @param {string|mongoose.Types.ObjectId} userId - The ID of the searching user.
+   * @returns {Promise<Array>} Array of matching cards enriched with list and board context.
    */
   async searchCards(query, userId) {
     if (!query) return [];

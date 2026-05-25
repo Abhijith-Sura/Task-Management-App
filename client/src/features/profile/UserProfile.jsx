@@ -4,7 +4,15 @@ import { useQuery } from '@tanstack/react-query';
 import api from '../../services/api';
 import { motion } from 'framer-motion';
 
+/**
+ * Renders the user profile view, displaying user statistics, recent performance,
+ * and common tags/labels used in assigned tasks.
+ * 
+ * @component
+ * @returns {JSX.Element} The rendered UserProfile component.
+ */
 export const UserProfile = () => {
+  // Retrieve local user data as fallback
   const localUser = JSON.parse(localStorage.getItem('user') || '{}');
 
   const { data: profileResponse, isLoading, isError } = useQuery({
@@ -29,6 +37,7 @@ export const UserProfile = () => {
   const stats = profileData.stats || { totalTasks: 0, highPriorityTasks: 0 };
   const assignedTasks = mineResponse?.data || [];
 
+  // Compute aggregated metrics based on user stats and assigned tasks
   const metrics = useMemo(() => {
     return {
       total: stats.totalTasks || 0,
@@ -37,6 +46,7 @@ export const UserProfile = () => {
     };
   }, [stats, assignedTasks]);
 
+  // Extract and rank the most commonly used labels from assigned tasks
   const tags = useMemo(() => {
     const labelCounts = {};
     assignedTasks.forEach(task => {

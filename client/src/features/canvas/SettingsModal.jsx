@@ -5,6 +5,28 @@ import api from '../../services/api';
 import { useQueryClient } from '@tanstack/react-query';
 import { showToast } from '../../components/ui/Toast';
 
+/**
+ * SettingsModal Component
+ * Displays the modal for configuring board settings, managing members, invites, and automations.
+ * 
+ * @param {Object} props - The component props.
+ * @param {Object} props.board - The active board data.
+ * @param {Array} props.members - List of board members.
+ * @param {Object} props.owner - Owner of the board.
+ * @param {Function} props.onUpdateBoard - Callback to apply board updates (like title changes).
+ * @param {Function} props.onDeleteBoard - Callback to delete the board.
+ * @param {Function} props.onInviteMember - Legacy callback for inviting members.
+ * @param {Function} props.onClose - Callback to close the modal.
+ * @param {Array} props.automations - Array of workflow automations for the board.
+ * @param {Function} props.onCreateAutomation - Callback to create a new automation rule.
+ * @param {Function} props.onToggleAutomation - Callback to toggle automation active state.
+ * @param {Function} props.onDeleteAutomation - Callback to remove an automation.
+ * @param {Array} props.invitations - List of pending invitations.
+ * @param {Function} props.onCreateInvitation - Callback to send a new targeted invitation.
+ * @param {Function} props.onRevokeInvitation - Callback to revoke a pending invitation.
+ * @param {Function} props.onResendInvitation - Callback to resend an invitation email.
+ * @returns {JSX.Element} The rendered modal component.
+ */
 export const SettingsModal = ({ 
   board, 
   members, 
@@ -46,7 +68,13 @@ export const SettingsModal = ({
   const currentUser = JSON.parse(localStorage.getItem('user') || '{}');
   const isOwner = currentUser._id === (board.owner?._id || board.owner);
 
-  // Dynamic Workspace Roles Lookup
+  /**
+   * Retrieves the current user's role from the parent workspace.
+   * Finds the user in the workspace members array and extracts their role.
+   * 
+   * @param {string} userId - ID of the user to look up.
+   * @returns {string} The user's role (e.g., 'editor', 'viewer', 'admin'). Defaults to 'editor'.
+   */
   const workspaceMembers = board?.workspaceId?.members || [];
   const findWorkspaceRole = (userId) => {
     const wsMember = workspaceMembers.find(m => {

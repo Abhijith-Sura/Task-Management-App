@@ -4,12 +4,25 @@ import { Terminal, ShieldAlert, Loader2, CheckCircle } from 'lucide-react';
 import bgControl from '../../assets/bg-control.png';
 import zenithLogo from '../../assets/zenith_logo.png';
 
+/**
+ * Component for users to request a password reset email.
+ *
+ * @param {Object} props - Component props
+ * @param {Function} props.onSwitchToLogin - Callback to switch the view back to the login screen
+ * @returns {React.ReactElement} The rendered Forgot Password view
+ */
 export const ForgotPassword = ({ onSwitchToLogin }) => {
   const [email, setEmail] = useState('');
   const [error, setError] = useState(null);
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState(false);
 
+  /**
+   * Handles the submission of the forgot password form.
+   * Sends a request to the backend with the provided email.
+   * 
+   * @param {React.FormEvent} e - The form submission event
+   */
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError(null);

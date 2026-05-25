@@ -4,6 +4,15 @@ import { UserPlus, ShieldAlert, Loader2 } from 'lucide-react';
 import bgControl from '../../assets/bg-control.png';
 import zenithLogo from '../../assets/zenith_logo.png';
 
+/**
+ * Component for new user registration.
+ *
+ * @param {Object} props - Component props
+ * @param {Function} props.onRegisterSuccess - Callback invoked upon successful registration
+ * @param {Function} props.onSwitchToLogin - Callback to switch to the login view
+ * @param {Function} props.onVerificationRequired - Callback invoked when the user needs to verify their email
+ * @returns {React.ReactElement} The rendered Register view
+ */
 export const Register = ({ onRegisterSuccess, onSwitchToLogin, onVerificationRequired }) => {
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
@@ -11,6 +20,12 @@ export const Register = ({ onRegisterSuccess, onSwitchToLogin, onVerificationReq
   const [error, setError] = useState(null);
   const [loading, setLoading] = useState(false);
 
+  /**
+   * Handles the submission of the registration form.
+   * Attempts to create a new user and checks if email verification is required.
+   * 
+   * @param {React.FormEvent} e - The form submission event
+   */
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError(null);

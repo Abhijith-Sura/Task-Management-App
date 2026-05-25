@@ -3,13 +3,34 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { MessageSquare, Paperclip, Clock, CheckSquare, Calendar, MoreHorizontal } from 'lucide-react';
 import { parseMetadata } from '../../utils/metadata';
 
+/**
+ * Card Component
+ * Represents a draggable task card within a board column.
+ * Displays metadata such as priority, due date, budget, and assignees.
+ * 
+ * @param {Object} props - The component props.
+ * @param {Object} props.card - The task data.
+ * @param {Function} props.onSelect - Callback triggered when the card is clicked.
+ * @param {boolean} props.isDragging - Indicates if the card is currently being dragged.
+ * @param {Function} props.onDragStart - Callback for drag start event.
+ * @param {Function} props.onDragEnd - Callback for drag end event.
+ * @param {boolean} props.isViewer - Indicates if the user has view-only permissions.
+ * @returns {JSX.Element} The rendered task card.
+ */
 export const Card = ({ card, onSelect, isDragging, onDragStart, onDragEnd, isViewer }) => {
   const metadata = parseMetadata(card.description);
 
+  /**
+   * Determines the status and styling of the task's due date.
+   * Computes the difference between today and the due date.
+   * 
+   * @returns {Object|null} Configuration object with status text and CSS class, or null if no due date.
+   */
   const getDueDateStatus = () => {
     if (!card.dueDate) return null;
     const due = new Date(card.dueDate);
     const today = new Date();
+    // Normalize today to midnight for accurate day difference calculations
     today.setHours(0, 0, 0, 0);
     const dueTime = due.getTime();
     const todayTime = today.getTime();
@@ -47,6 +68,12 @@ export const Card = ({ card, onSelect, isDragging, onDragStart, onDragEnd, isVie
     }
   };
 
+  /**
+   * Evaluates the budget status based on actual cost vs allocated budget.
+   * Fallbacks to parsing metadata if standard fields are unavailable.
+   * 
+   * @returns {Object|null} Configuration object with budget text and CSS class, or null if no budget.
+   */
   const getBudgetStatus = () => {
     const budgetVal = card.metadata?.budget || metadata?.budget || 0;
     const actualVal = card.metadata?.actualCost || metadata?.actualCost || 0;

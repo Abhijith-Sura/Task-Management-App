@@ -3,6 +3,15 @@ import { verifyOtp, resendOtp } from './AuthService';
 import { ShieldCheck, ShieldAlert, Loader2, RefreshCw, KeyRound, ChevronLeft } from 'lucide-react';
 import bgControl from '../../assets/bg-control.png';
 
+/**
+ * Component for users to enter and verify their One-Time Password (OTP).
+ *
+ * @param {Object} props - Component props
+ * @param {string} props.email - The user's email address where the OTP was sent
+ * @param {Function} props.onVerificationSuccess - Callback invoked when OTP is successfully verified
+ * @param {Function} props.onSwitchToLogin - Callback to switch the view back to the login screen
+ * @returns {React.ReactElement} The rendered OTP Verification view
+ */
 export const VerifyOtp = ({ email, onVerificationSuccess, onSwitchToLogin }) => {
   const [otp, setOtp] = useState(['', '', '', '', '', '']);
   const [error, setError] = useState(null);
@@ -48,12 +57,25 @@ export const VerifyOtp = ({ email, onVerificationSuccess, onSwitchToLogin }) => 
     }
   }, []);
 
+  /**
+   * Formats a duration in seconds into a MM:SS string.
+   * 
+   * @param {number} seconds - The duration in seconds
+   * @returns {string} The formatted time string
+   */
   const formatTime = (seconds) => {
     const mins = Math.floor(seconds / 60);
     const secs = seconds % 60;
     return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
   };
 
+  /**
+   * Handles changes in the OTP input fields.
+   * Ensures only numeric input and auto-focuses the next field.
+   * 
+   * @param {number} index - The index of the input field
+   * @param {string} value - The new value of the input field
+   */
   const handleChange = (index, value) => {
     // Only accept numeric inputs
     if (value !== '' && !/^[0-9]$/.test(value)) return;
@@ -69,6 +91,13 @@ export const VerifyOtp = ({ email, onVerificationSuccess, onSwitchToLogin }) => 
     }
   };
 
+  /**
+   * Handles keyboard events in the OTP input fields.
+   * Allows moving to the previous field on Backspace.
+   * 
+   * @param {number} index - The index of the input field
+   * @param {React.KeyboardEvent} e - The keyboard event
+   */
   const handleKeyDown = (index, e) => {
     // Move to previous input on backspace if current is empty
     if (e.key === 'Backspace' && otp[index] === '' && index > 0 && inputRefs[index - 1].current) {
@@ -76,6 +105,11 @@ export const VerifyOtp = ({ email, onVerificationSuccess, onSwitchToLogin }) => 
     }
   };
 
+  /**
+   * Handles pasting a 6-digit code into the OTP input fields.
+   * 
+   * @param {React.ClipboardEvent} e - The paste event
+   */
   const handlePaste = (e) => {
     e.preventDefault();
     const pasteData = e.clipboardData.getData('text').trim();
@@ -96,6 +130,11 @@ export const VerifyOtp = ({ email, onVerificationSuccess, onSwitchToLogin }) => 
     }
   };
 
+  /**
+   * Handles the submission of the OTP for verification.
+   * 
+   * @param {React.FormEvent} [e] - The form submission event (optional)
+   */
   const handleSubmit = async (e) => {
     if (e) e.preventDefault();
     const otpCode = otp.join('');
@@ -119,6 +158,9 @@ export const VerifyOtp = ({ email, onVerificationSuccess, onSwitchToLogin }) => 
     }
   };
 
+  /**
+   * Requests a new OTP to be sent and restarts the cooldown timer.
+   */
   const handleResend = async () => {
     if (resendCooldown > 0) return;
     setError(null);

@@ -4,10 +4,17 @@ import api from '../../services/api';
 import { socketService } from '../../services/socket';
 import offlineSyncService from '../../services/offlineSync';
 
+/**
+ * Custom hook to manage server state for a specific board.
+ * Handles data fetching, real-time socket connections, optimistic updates, and offline sync.
+ * 
+ * @param {string} boardId - The ID of the board to manage.
+ * @returns {Object} Board data, loading states, and mutation functions for cards/lists/automations.
+ */
 export const useBoardData = (boardId) => {
   const queryClient = useQueryClient();
 
-  // Fetch Board Data
+  // Fetch Board Data: Handles both online querying and offline cache retrieval
   const { data: boardResponse, isLoading, error } = useQuery({
     queryKey: ['board', boardId],
     queryFn: async () => {
@@ -99,7 +106,7 @@ export const useBoardData = (boardId) => {
     };
   }, [boardId]);
 
-  // Mutation for moving cards (Optimistic UI)
+  // Mutation for moving cards: Features optimistic UI updates and offline mutation queueing
   const moveCardMutation = useMutation({
     mutationFn: async ({ cardId, targetListId, newPosition }) => {
       if (!navigator.onLine) {

@@ -9,8 +9,12 @@ import Card from "../models/Card.js";
 import { broadcastToBoard } from "../sockets/socketHandler.js";
 
 /**
- * @desc    Create a new board
+ * Creates a new board for the authenticated user.
+ * 
  * @route   POST /api/boards
+ * @param {import("express").Request} req - The Express request object containing board details.
+ * @param {import("express").Response} res - The Express response object.
+ * @returns {Promise<void>} Sends a success response with the newly created board.
  */
 export const createBoard = asyncHandler(async (req, res) => {
   const board = await boardService.createBoard(req.body, req.user.id);
@@ -18,8 +22,12 @@ export const createBoard = asyncHandler(async (req, res) => {
 });
 
 /**
- * @desc    Create a new board from an enterprise template config
+ * Creates a new board by instantiating an enterprise template configuration.
+ * 
  * @route   POST /api/boards/create-from-template
+ * @param {import("express").Request} req - The Express request object containing template configuration data.
+ * @param {import("express").Response} res - The Express response object.
+ * @returns {Promise<void>} Sends a success response with the configured board.
  */
 export const createBoardFromTemplate = asyncHandler(async (req, res) => {
   const board = await boardService.createBoardFromTemplate(req.body, req.user.id);
@@ -27,8 +35,12 @@ export const createBoardFromTemplate = asyncHandler(async (req, res) => {
 });
 
 /**
- * @desc    Get all boards for current user
+ * Retrieves all boards accessible to the currently authenticated user.
+ * 
  * @route   GET /api/boards
+ * @param {import("express").Request} req - The Express request object.
+ * @param {import("express").Response} res - The Express response object.
+ * @returns {Promise<void>} Sends a success response with a list of boards.
  */
 export const getBoards = asyncHandler(async (req, res) => {
   const boards = await boardService.getUserBoards(req.user.id);
@@ -36,8 +48,12 @@ export const getBoards = asyncHandler(async (req, res) => {
 });
 
 /**
- * @desc    Get full board details (lists & cards)
+ * Retrieves the complete hierarchy of a board, including its lists and cards.
+ * 
  * @route   GET /api/boards/:id
+ * @param {import("express").Request} req - The Express request object containing the board `id` parameter.
+ * @param {import("express").Response} res - The Express response object.
+ * @returns {Promise<void>} Sends a success response with the detailed board structure.
  */
 export const getBoardDetail = asyncHandler(async (req, res) => {
   const board = await boardService.getBoardDetails(req.params.id);
@@ -45,8 +61,12 @@ export const getBoardDetail = asyncHandler(async (req, res) => {
 });
 
 /**
- * @desc    Update board (rename, etc.)
+ * Updates properties of an existing board, such as title or visibility.
+ * 
  * @route   PUT /api/boards/:id
+ * @param {import("express").Request} req - The Express request object containing updated properties.
+ * @param {import("express").Response} res - The Express response object.
+ * @returns {Promise<void>} Sends a success response with the updated board.
  */
 export const updateBoard = asyncHandler(async (req, res) => {
   const board = await boardService.updateBoard(req.params.id, req.body);
@@ -54,8 +74,13 @@ export const updateBoard = asyncHandler(async (req, res) => {
 });
 
 /**
- * @desc    Invite member to board
+ * Invites a new member to the board via their email address.
+ * Dispatches an invitation email if the user does not currently exist.
+ * 
  * @route   POST /api/boards/invite
+ * @param {import("express").Request} req - The Express request object containing `boardId` and `email`.
+ * @param {import("express").Response} res - The Express response object.
+ * @returns {Promise<void>} Sends a success response confirming the addition or dispatched invitation.
  */
 export const inviteMember = asyncHandler(async (req, res) => {
   const { boardId, email } = req.body;
@@ -68,8 +93,12 @@ export const inviteMember = asyncHandler(async (req, res) => {
 });
 
 /**
- * @desc    Delete board
+ * Deletes a board and its associated cascading resources (lists, cards, activities).
+ * 
  * @route   DELETE /api/boards/:id
+ * @param {import("express").Request} req - The Express request object containing the board `id`.
+ * @param {import("express").Response} res - The Express response object.
+ * @returns {Promise<void>} Sends a success response indicating completion.
  */
 export const deleteBoard = asyncHandler(async (req, res) => {
   await boardService.deleteBoard(req.params.id);
@@ -77,8 +106,12 @@ export const deleteBoard = asyncHandler(async (req, res) => {
 });
 
 /**
- * @desc    Get activity log for a board
+ * Retrieves the activity log (audit trail) for a specific board.
+ * 
  * @route   GET /api/boards/:id/activity
+ * @param {import("express").Request} req - The Express request object containing the board `id`.
+ * @param {import("express").Response} res - The Express response object.
+ * @returns {Promise<void>} Sends a success response with a chronological list of board activities.
  */
 export const getBoardActivity = asyncHandler(async (req, res) => {
   const activities = await Activity.find({ boardId: req.params.id })
@@ -89,8 +122,12 @@ export const getBoardActivity = asyncHandler(async (req, res) => {
 });
 
 /**
- * @desc    Generate Invite Link
+ * Generates a sharable invitation link for a board.
+ * 
  * @route   GET /api/boards/:id/invite-link
+ * @param {import("express").Request} req - The Express request object containing the board `id`.
+ * @param {import("express").Response} res - The Express response object.
+ * @returns {Promise<void>} Sends a success response containing the generated invite link token.
  */
 export const generateInviteLink = asyncHandler(async (req, res) => {
   const origin = req.get("origin") || req.headers.origin;
@@ -99,8 +136,12 @@ export const generateInviteLink = asyncHandler(async (req, res) => {
 });
 
 /**
- * @desc    Reset and Revoke Invite Link
+ * Revokes an existing invitation link and generates a fresh one, securing the board from unauthorized access.
+ * 
  * @route   POST /api/boards/:id/invite-link/reset
+ * @param {import("express").Request} req - The Express request object containing the board `id`.
+ * @param {import("express").Response} res - The Express response object.
+ * @returns {Promise<void>} Sends a success response with the new invite link details.
  */
 export const resetInviteLink = asyncHandler(async (req, res) => {
   const origin = req.get("origin") || req.headers.origin;
@@ -109,8 +150,12 @@ export const resetInviteLink = asyncHandler(async (req, res) => {
 });
 
 /**
- * @desc    Join Board via Link
+ * Joins a board using a valid invitation link token.
+ * 
  * @route   POST /api/boards/join/:token
+ * @param {import("express").Request} req - The Express request object containing the invitation `token`.
+ * @param {import("express").Response} res - The Express response object.
+ * @returns {Promise<void>} Sends a success response confirming the user has joined the board.
  */
 export const joinViaLink = asyncHandler(async (req, res) => {
   const result = await boardService.joinViaLink(req.params.token, req.user.id);
@@ -118,8 +163,13 @@ export const joinViaLink = asyncHandler(async (req, res) => {
 });
 
 /**
- * @desc    Send Invite Email
+ * Dispatches a standard invitation email to an external user.
+ * 
  * @route   POST /api/boards/:id/invite-email
+ * @param {import("express").Request} req - The Express request object containing `email` and the board `id`.
+ * @param {import("express").Response} res - The Express response object.
+ * @throws {Error} If `email` is not provided.
+ * @returns {Promise<void>} Sends a success response confirming email dispatch.
  */
 export const sendInviteEmail = asyncHandler(async (req, res) => {
   const { email } = req.body;
@@ -132,8 +182,13 @@ export const sendInviteEmail = asyncHandler(async (req, res) => {
 });
 
 /**
- * @desc    Create Gated Invitation
+ * Creates a gated, specific invitation assigning a role to a target user.
+ * 
  * @route   POST /api/boards/:id/invitations
+ * @param {import("express").Request} req - The Express request object containing `email`, `role`, and board `id`.
+ * @param {import("express").Response} res - The Express response object.
+ * @throws {Error} If `email` is missing.
+ * @returns {Promise<void>} Sends a success response with the created invitation entity.
  */
 export const createInvitation = asyncHandler(async (req, res) => {
   const { email, role } = req.body;
@@ -146,8 +201,12 @@ export const createInvitation = asyncHandler(async (req, res) => {
 });
 
 /**
- * @desc    Get Pending Invitations
+ * Retrieves all pending invitations issued for a specific board.
+ * 
  * @route   GET /api/boards/:id/invitations
+ * @param {import("express").Request} req - The Express request object containing the board `id`.
+ * @param {import("express").Response} res - The Express response object.
+ * @returns {Promise<void>} Sends a success response with an array of active invitations.
  */
 export const getInvitations = asyncHandler(async (req, res) => {
   const invitations = await boardService.getInvitations(req.params.id);
@@ -155,8 +214,13 @@ export const getInvitations = asyncHandler(async (req, res) => {
 });
 
 /**
- * @desc    Revoke Invitation
+ * Revokes a pending invitation before the target user can accept it.
+ * Broadcasts the revocation event to board viewers.
+ * 
  * @route   DELETE /api/boards/:id/invitations/:inviteId
+ * @param {import("express").Request} req - The Express request object containing `inviteId` and board `id`.
+ * @param {import("express").Response} res - The Express response object.
+ * @returns {Promise<void>} Sends a success response confirming the invitation was revoked.
  */
 export const revokeInvitation = asyncHandler(async (req, res) => {
   const invite = await boardService.revokeInvitation(req.params.inviteId, req.user.id);
@@ -165,8 +229,12 @@ export const revokeInvitation = asyncHandler(async (req, res) => {
 });
 
 /**
- * @desc    Resend Invitation Email
+ * Resends an existing invitation email to the target recipient.
+ * 
  * @route   POST /api/boards/:id/invitations/:inviteId/resend
+ * @param {import("express").Request} req - The Express request object containing `inviteId` and board `id`.
+ * @param {import("express").Response} res - The Express response object.
+ * @returns {Promise<void>} Sends a success response confirming the email was resent.
  */
 export const resendInvitation = asyncHandler(async (req, res) => {
   const origin = req.get("origin") || req.headers.origin;
@@ -175,8 +243,13 @@ export const resendInvitation = asyncHandler(async (req, res) => {
 });
 
 /**
- * @desc    Accept Invitation
+ * Processes a user's acceptance of an invitation token, appending them to the board.
+ * Broadcasts the updated board membership state to all connected clients.
+ * 
  * @route   POST /api/boards/invitations/accept/:token
+ * @param {import("express").Request} req - The Express request object containing the invitation `token`.
+ * @param {import("express").Response} res - The Express response object.
+ * @returns {Promise<void>} Sends a success response indicating the user has been added.
  */
 export const acceptInvitation = asyncHandler(async (req, res) => {
   const result = await boardService.acceptInvitation(req.params.token, req.user.id);
@@ -185,8 +258,12 @@ export const acceptInvitation = asyncHandler(async (req, res) => {
 });
 
 /**
- * @desc    Get Automations for Board
+ * Retrieves all configured automation rules mapped to a specific board.
+ * 
  * @route   GET /api/boards/:id/automations
+ * @param {import("express").Request} req - The Express request object containing the board `id`.
+ * @param {import("express").Response} res - The Express response object.
+ * @returns {Promise<void>} Sends a success response with an array of automation rules.
  */
 export const getAutomations = asyncHandler(async (req, res) => {
   const automations = await automationService.getAutomations(req.params.id);
@@ -194,8 +271,12 @@ export const getAutomations = asyncHandler(async (req, res) => {
 });
 
 /**
- * @desc    Create Automation Rule
+ * Defines and persists a new automation rule for a board.
+ * 
  * @route   POST /api/boards/:id/automations
+ * @param {import("express").Request} req - The Express request object containing the board `id` and rule definitions.
+ * @param {import("express").Response} res - The Express response object.
+ * @returns {Promise<void>} Sends a success response with the registered automation rule.
  */
 export const createAutomation = asyncHandler(async (req, res) => {
   const automation = await automationService.createAutomation(req.params.id, req.body);
@@ -203,8 +284,12 @@ export const createAutomation = asyncHandler(async (req, res) => {
 });
 
 /**
- * @desc    Toggle Automation Rule
+ * Toggles the operational state (active/inactive) of an automation rule.
+ * 
  * @route   PUT /api/boards/:id/automations/:automationId
+ * @param {import("express").Request} req - The Express request object containing `automationId` and target `active` state.
+ * @param {import("express").Response} res - The Express response object.
+ * @returns {Promise<void>} Sends a success response with the updated automation record.
  */
 export const toggleAutomation = asyncHandler(async (req, res) => {
   const { active } = req.body;
@@ -213,8 +298,12 @@ export const toggleAutomation = asyncHandler(async (req, res) => {
 });
 
 /**
- * @desc    Delete Automation Rule
+ * Removes an existing automation rule from a board.
+ * 
  * @route   DELETE /api/boards/:id/automations/:automationId
+ * @param {import("express").Request} req - The Express request object containing the `automationId`.
+ * @param {import("express").Response} res - The Express response object.
+ * @returns {Promise<void>} Sends a success response confirming deletion.
  */
 export const deleteAutomation = asyncHandler(async (req, res) => {
   await automationService.deleteAutomation(req.params.automationId);
@@ -222,17 +311,23 @@ export const deleteAutomation = asyncHandler(async (req, res) => {
 });
 
 /**
- * @desc    Faceted board search and statistics aggregator
+ * Performs a faceted search across a board's cards and aggregates distribution statistics
+ * (priority, tags, assignees) for analytics rendering.
+ * 
  * @route   GET /api/boards/:id/search
+ * @param {import("express").Request} req - The Express request object containing search queries and the board `id`.
+ * @param {import("express").Response} res - The Express response object.
+ * @returns {Promise<void>} Sends a success response detailing matching cards and metadata aggregations.
  */
 export const searchBoardCards = asyncHandler(async (req, res) => {
   const boardId = req.params.id;
   const { q, priority, assigneeId, label } = req.query;
 
-  // 1. Get all lists on this board
+  // Retrieve all internal list identifiers mapped to the target board for querying nested cards
   const lists = await List.find({ boardId }).select("_id").lean();
   const listIds = lists.map(l => l._id);
 
+  // Short-circuit execution if the board has no constituent lists
   if (listIds.length === 0) {
     return successResponse(res, {
       cards: [],
@@ -242,9 +337,10 @@ export const searchBoardCards = asyncHandler(async (req, res) => {
     });
   }
 
-  // 2. Build match queries
+  // Construct a baseline MongoDB match query constrained by the identified board lists
   const matchQuery = { listId: { $in: listIds } };
 
+  // Append optional search criteria based on user input
   if (q) {
     matchQuery.$or = [
       { title: { $regex: q, $options: "i" } },
@@ -264,7 +360,8 @@ export const searchBoardCards = asyncHandler(async (req, res) => {
     matchQuery["labels.text"] = { $regex: label, $options: "i" };
   }
 
-  // 3. Execute faceted aggregation
+  // Execute a robust multifaceted aggregation pipeline combining filtered card retrieval
+  // with parallel statistical generation streams used for front-end charts and filtering UI.
   const aggregationResult = await Card.aggregate([
     { $match: matchQuery },
     {
@@ -303,6 +400,7 @@ export const searchBoardCards = asyncHandler(async (req, res) => {
     }
   ]);
 
+  // Extract the facet document, safely falling back to empty representations if devoid of matches
   const result = aggregationResult[0] || {
     cards: [],
     priorityDistribution: [],

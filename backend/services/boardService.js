@@ -13,18 +13,29 @@ import Automation from "../models/Automation.js";
 import Workspace from "../models/Workspace.js";
 
 /**
- * @desc    Board Related Business Logic
+ * Service handling business logic for boards.
+ * Manages board creation, templates, retrieval, updates, deletions, and member invitations.
  */
 class BoardService {
   /**
-   * @desc    Create a new board
+   * Creates a new board for a user, optionally placing it in a specific workspace.
+   * If no workspace is provided, it defaults to or creates a "Personal" workspace.
+   * 
+   * @param {Object} data - The board creation payload.
+   * @param {string} data.title - The title of the board.
+   * @param {string|mongoose.Types.ObjectId} [data.workspaceId] - The target workspace ID.
+   * @param {string} [data.category] - The category/type of the board.
+   * @param {string|mongoose.Types.ObjectId} userId - The ID of the user creating the board.
+   * @returns {Promise<Object>} The newly created board document.
    */
   async createBoard(data, userId) {
     let { title, workspaceId, category } = data;
 
+    // Fallback to a "Personal" workspace if none is specified
     if (!workspaceId) {
       let personal = await Workspace.findOne({ owner: userId, name: "Personal" });
       
+      // Auto-create the Personal workspace if it doesn't exist for the user
       if (!personal) {
         personal = await Workspace.create({
           name: "Personal",
@@ -41,12 +52,21 @@ class BoardService {
       workspaceId,
       owner: userId,
       category: category || "General",
-      inviteToken: crypto.randomBytes(20).toString("hex")
+      inviteToken: crypto.randomBytes(20).toString("hex") // Pre-generate an invite token for shareable links
     });
   }
 
   /**
-   * @desc    Create a new board deep-cloning an enterprise template config
+   * Creates a new board by deep-cloning an enterprise template configuration.
+   * Copies lists, cards, checklists, and automations from the template.
+   * 
+   * @param {Object} data - The template instantiation payload.
+   * @param {string} data.templateId - The ID of the template to clone.
+   * @param {string} [data.title] - Override title for the new board.
+   * @param {string|mongoose.Types.ObjectId} [data.workspaceId] - The target workspace ID.
+   * @param {string|mongoose.Types.ObjectId} userId - The ID of the user creating the board.
+   * @returns {Promise<Object>} The fully populated new board document.
+   * @throws {AppError} If the templateId is invalid or not found.
    */
   async createBoardFromTemplate(data, userId) {
     const { templateId, title, workspaceId } = data;
@@ -138,6 +158,7 @@ class BoardService {
           if (matchingList) triggerListId = matchingList._id;
         }
 
+        // Persist the copied automation rules
         await Automation.create({
           boardId: board._id,
           name: auto.name,
@@ -162,7 +183,10 @@ class BoardService {
   }
 
   /**
-   * @desc    Get all boards for a user (owned or member)
+   * Retrieves all boards that a user owns or is a member of.
+   * 
+   * @param {string|mongoose.Types.ObjectId} userId - The user's ID.
+   * @returns {Promise<Array>} Array of boards populated with member, owner, and workspace details.
    */
   async getUserBoards(userId) {
     return await Board.find({
@@ -175,7 +199,11 @@ class BoardService {
   }
 
   /**
-   * @desc    Get board by ID with full details (populated lists and cards)
+   * Retrieves a specific board with full nested details (lists, cards, assignees, comments count).
+   * 
+   * @param {string|mongoose.Types.ObjectId} boardId - The ID of the board.
+   * @returns {Promise<Object>} The heavily populated board document.
+   * @throws {AppError} If the board is not found.
    */
   async getBoardDetails(boardId) {
     const board = await Board.findById(boardId)
@@ -205,7 +233,7 @@ class BoardService {
       throw new AppError("Board not found", 404);
     }
 
-    // Add comment counts to each card
+    // Add comment counts dynamically to each card for UI display
     for (const list of board.lists) {
       for (const card of list.cards) {
         card.commentCount = await Comment.countDocuments({ cardId: card._id });
@@ -216,7 +244,12 @@ class BoardService {
   }
 
   /**
-   * @desc    Update board (title, etc.)
+   * Updates core board attributes such as title or category.
+   * 
+   * @param {string|mongoose.Types.ObjectId} boardId - The ID of the board to update.
+   * @param {Object} updates - The fields to update.
+   * @returns {Promise<Object>} The updated and populated board document.
+   * @throws {AppError} If the board is not found.
    */
   async updateBoard(boardId, updates) {
     const board = await Board.findByIdAndUpdate(
@@ -232,10 +265,15 @@ class BoardService {
   }
 
   /**
-   * @desc    Invite a member to a board by email.
-   *          If the user is already registered, they are added directly.
-   *          If not registered, a targeted invitation email is sent so they
-   *          can sign up and join the board seamlessly.
+   * Invites a user to a board by email.
+   * If the user is already registered in the system, they are added directly to the board and workspace.
+   * If not registered, a targeted invitation email is sent with a signup link.
+   * 
+   * @param {string|mongoose.Types.ObjectId} boardId - The board to invite the member to.
+   * @param {string} email - The email address of the invitee.
+   * @param {string|mongoose.Types.ObjectId} userId - The user ID sending the invite.
+   * @param {string} [clientOrigin] - The frontend URL origin for constructing email links.
+   * @returns {Promise<Object|null>} The updated board if added directly, or null if an email invite was sent.
    */
   async inviteMember(boardId, email, userId, clientOrigin) {
     const user = await User.findOne({ email: email.toLowerCase() });
@@ -269,7 +307,10 @@ class BoardService {
   }
 
   /**
-   * @desc    Delete a board and all its associated lists and cards
+   * Deletes a board and all its associated lists and cards to ensure no orphaned data remains.
+   * 
+   * @param {string|mongoose.Types.ObjectId} boardId - The ID of the board to delete.
+   * @returns {Promise<Object>} The deleted board document.
    */
   async deleteBoard(boardId) {
     const lists = await List.find({ boardId });
@@ -284,7 +325,14 @@ class BoardService {
   }
 
   /**
-   * @desc    Generate an invite link for a board
+   * Generates a generic, shareable invitation link for the board.
+   * Access requires the user to be the board owner, a board member, or a workspace admin.
+   * 
+   * @param {string|mongoose.Types.ObjectId} boardId - The ID of the board.
+   * @param {string|mongoose.Types.ObjectId} userId - The requesting user's ID.
+   * @param {string} [clientOrigin] - The frontend URL origin for constructing the link.
+   * @returns {Promise<Object>} Object containing the inviteLink string.
+   * @throws {AppError} If unauthorized or board not found.
    */
   async generateInviteLink(boardId, userId, clientOrigin) {
     const board = await Board.findById(boardId).populate("workspaceId");
@@ -312,7 +360,14 @@ class BoardService {
   }
 
   /**
-   * @desc    Reset and revoke current invite link
+   * Resets the generic invitation link, revoking any previously generated links.
+   * Only the board owner or workspace admin can reset the link.
+   * 
+   * @param {string|mongoose.Types.ObjectId} boardId - The ID of the board.
+   * @param {string|mongoose.Types.ObjectId} userId - The requesting user's ID.
+   * @param {string} [clientOrigin] - The frontend URL origin.
+   * @returns {Promise<Object>} Object containing the new inviteLink string.
+   * @throws {AppError} If unauthorized or board not found.
    */
   async resetInviteLink(boardId, userId, clientOrigin) {
     const board = await Board.findById(boardId).populate("workspaceId");
@@ -337,7 +392,13 @@ class BoardService {
   }
 
   /**
-   * @desc    Join a board via invite link
+   * Allows a user to join a board using a generic invite token.
+   * Validates the token and adds the user to the board and workspace members.
+   * 
+   * @param {string} token - The invite token from the link.
+   * @param {string|mongoose.Types.ObjectId} userId - The user joining the board.
+   * @returns {Promise<Object>} Object containing the joined boardId.
+   * @throws {AppError} If token is invalid or expired.
    */
   async joinViaLink(token, userId) {
     const board = await Board.findOne({ inviteToken: token });
@@ -362,7 +423,15 @@ class BoardService {
   }
 
   /**
-   * @desc    Send an email invitation to join a board
+   * Sends a generic email invitation with the shareable link to join the board.
+   * Only the board owner can send these emails.
+   * 
+   * @param {string|mongoose.Types.ObjectId} boardId - The ID of the board.
+   * @param {string} email - The email address to send the invitation to.
+   * @param {string|mongoose.Types.ObjectId} userId - The user sending the email.
+   * @param {string} [clientOrigin] - The frontend URL origin.
+   * @returns {Promise<Object>} Success message.
+   * @throws {AppError} If email dispatch fails or unauthorized.
    */
   async sendInviteEmail(boardId, email, userId, clientOrigin) {
     const board = await Board.findById(boardId).populate("owner", "name");
@@ -415,7 +484,16 @@ class BoardService {
   }
 
   /**
-   * @desc    Create a new targeted individual invitation
+   * Creates and emails a new targeted, individual invitation to a specific user.
+   * The invitation grants a specific role and is bound to the provided email address.
+   * 
+   * @param {string|mongoose.Types.ObjectId} boardId - The board ID.
+   * @param {string} email - The target invitee email address.
+   * @param {string} role - The role to grant (e.g., 'editor', 'viewer').
+   * @param {string|mongoose.Types.ObjectId} userId - The ID of the user creating the invite.
+   * @param {string} [clientOrigin] - The frontend URL origin.
+   * @returns {Promise<Object>} The created invitation record.
+   * @throws {AppError} If user is already a member, or email sending fails.
    */
   async createInvitation(boardId, email, role, userId, clientOrigin) {
     const board = await Board.findById(boardId).populate("owner", "name");
@@ -485,7 +563,10 @@ class BoardService {
   }
 
   /**
-   * @desc    Get all pending invitations for a board
+   * Retrieves all pending targeted invitations for a specific board.
+   * 
+   * @param {string|mongoose.Types.ObjectId} boardId - The ID of the board.
+   * @returns {Promise<Array>} Array of populated pending invitation documents.
    */
   async getInvitations(boardId) {
     return await Invitation.find({ boardId, status: "pending" })
@@ -494,7 +575,13 @@ class BoardService {
   }
 
   /**
-   * @desc    Revoke/Cancel a targeted invitation
+   * Revokes/cancels a targeted invitation, rendering its link invalid.
+   * Only the board owner can revoke invitations.
+   * 
+   * @param {string|mongoose.Types.ObjectId} invitationId - The ID of the invitation.
+   * @param {string|mongoose.Types.ObjectId} userId - The ID of the requesting user.
+   * @returns {Promise<Object>} The revoked invitation document.
+   * @throws {AppError} If unauthorized or invitation not found.
    */
   async revokeInvitation(invitationId, userId) {
     const invite = await Invitation.findById(invitationId);
@@ -514,7 +601,13 @@ class BoardService {
   }
 
   /**
-   * @desc    Resend a pending targeted invitation
+   * Resends the email for a currently pending targeted invitation.
+   * 
+   * @param {string|mongoose.Types.ObjectId} invitationId - The ID of the pending invitation.
+   * @param {string|mongoose.Types.ObjectId} userId - The ID of the requesting user.
+   * @param {string} [clientOrigin] - The frontend URL origin.
+   * @returns {Promise<Object>} The invitation document.
+   * @throws {AppError} If unauthorized, invitation not found, or not pending.
    */
   async resendInvitation(invitationId, userId, clientOrigin) {
     const invite = await Invitation.findById(invitationId);
@@ -568,7 +661,13 @@ class BoardService {
   }
 
   /**
-   * @desc    Accept a targeted invitation
+   * Processes the acceptance of a targeted individual invitation.
+   * Adds the user to the board and workspace with the specified role.
+   * 
+   * @param {string} token - The unique token for the targeted invitation.
+   * @param {string|mongoose.Types.ObjectId} userId - The ID of the user accepting the invite.
+   * @returns {Promise<Object>} Object containing the joined boardId.
+   * @throws {AppError} If invitation is invalid, expired, or revoked.
    */
   async acceptInvitation(token, userId) {
     const invite = await Invitation.findOne({ token, status: "pending" });

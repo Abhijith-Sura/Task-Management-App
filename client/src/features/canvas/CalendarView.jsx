@@ -2,9 +2,19 @@ import React, { useState } from 'react';
 import { ChevronLeft, ChevronRight, Calendar as CalendarIcon, Clock } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
+/**
+ * CalendarView Component
+ * Renders a calendar interface displaying tasks based on their due dates.
+ * 
+ * @param {Object} props - The component props.
+ * @param {Array} props.lists - The lists containing cards/tasks to display.
+ * @param {Function} props.onCardSelect - Callback function triggered when a card is clicked.
+ * @returns {JSX.Element} The rendered calendar view.
+ */
 export const CalendarView = ({ lists, onCardSelect }) => {
   const [currentDate, setCurrentDate] = useState(new Date());
 
+  // Flatten all cards from the lists into a single array for easier filtering by date
   const allCards = lists?.flatMap(list => 
     list.cards?.map(card => ({ ...card, listTitle: list.title })) || []
   ) || [];
@@ -19,32 +29,44 @@ export const CalendarView = ({ lists, onCardSelect }) => {
   const totalDays = daysInMonth(year, month);
   const startOffset = firstDayOfMonth(year, month);
 
-  // Padding for previous month
+  // Add null padding for the days of the previous month before the 1st of the current month
   for (let i = 0; i < startOffset; i++) {
     days.push(null);
   }
 
-  // Days of current month
+  // Add the actual days of the current month
   for (let i = 1; i <= totalDays; i++) {
     days.push(new Date(year, month, i));
   }
 
-  // Padding for next month to complete the grid to a multiple of 7
+  // Add null padding for the next month to complete the grid (ensuring a multiple of 7 cells)
   const totalCells = Math.ceil(days.length / 7) * 7;
   const endOffset = totalCells - days.length;
   for (let i = 0; i < endOffset; i++) {
     days.push(null);
   }
 
+  /**
+   * Navigates the calendar by a specified number of months.
+   * @param {number} direction - 1 for next month, -1 for previous month.
+   */
   const navigateMonth = (direction) => {
     const newDate = new Date(currentDate);
     newDate.setMonth(currentDate.getMonth() + direction);
     setCurrentDate(newDate);
   };
 
+  /**
+   * Normalizes a date input to a local YYYY-MM-DD string format.
+   * Resolves issues where UTC midnight dates shift by a day depending on the local timezone.
+   * @param {string|Date} dateInput - The date to format.
+   * @returns {string} The formatted YYYY-MM-DD string.
+   */
   const formatLocalDate = (dateInput) => {
     if (!dateInput) return '';
     const dateStr = typeof dateInput === 'string' ? dateInput : new Date(dateInput).toISOString();
+    
+    // Check if the date string signifies UTC midnight
     const isUtcMidnight = /^\d{4}-\d{2}-\d{2}$/.test(dateStr) || dateStr.endsWith('T00:00:00.000Z') || dateStr.endsWith('T00:00:00.000+00:00') || dateStr.includes('T00:00:00');
     
     const date = new Date(dateInput);
@@ -63,6 +85,11 @@ export const CalendarView = ({ lists, onCardSelect }) => {
     }
   };
 
+  /**
+   * Retrieves all tasks/cards assigned to a specific date.
+   * @param {Date} date - The date to filter cards by.
+   * @returns {Array} An array of cards due on the given date.
+   */
   const getCardsForDate = (date) => {
     if (!date) return [];
     const cellDateStr = formatLocalDate(date);

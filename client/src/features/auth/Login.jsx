@@ -4,12 +4,28 @@ import { Terminal, ShieldAlert, Loader2 } from 'lucide-react';
 import bgControl from '../../assets/bg-control.png';
 import zenithLogo from '../../assets/zenith_logo.png';
 
+/**
+ * Component for user authentication and login.
+ *
+ * @param {Object} props - Component props
+ * @param {Function} props.onLoginSuccess - Callback invoked upon successful login
+ * @param {Function} props.onSwitchToRegister - Callback to switch to the registration view
+ * @param {Function} props.onVerificationRequired - Callback invoked if the user needs to verify their email
+ * @param {Function} props.onSwitchToForgotPassword - Callback to switch to the forgot password view
+ * @returns {React.ReactElement} The rendered Login view
+ */
 export const Login = ({ onLoginSuccess, onSwitchToRegister, onVerificationRequired, onSwitchToForgotPassword }) => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState(null);
   const [loading, setLoading] = useState(false);
 
+  /**
+   * Handles the submission of the login form.
+   * Attempts to authenticate the user and routes them based on their verification status.
+   * 
+   * @param {React.FormEvent} e - The form submission event
+   */
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError(null);

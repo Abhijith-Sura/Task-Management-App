@@ -10,6 +10,12 @@ import nodemailer from "nodemailer";
 
 /**
  * Send email via Brevo (Sendinblue) HTTP API
+ *
+ * @param {Object} options - Email options (email, subject, message, html).
+ * @param {string} fromAddress - The sender's email address.
+ * @param {string} fromName - The sender's display name.
+ * @returns {Promise<Object>} The response data from Brevo API.
+ * @throws {Error} If the API request fails.
  */
 const sendViaBrevoAPI = async (options, fromAddress, fromName) => {
   const response = await fetch("https://api.brevo.com/v3/smtp/email", {
@@ -40,6 +46,12 @@ const sendViaBrevoAPI = async (options, fromAddress, fromName) => {
 
 /**
  * Send email via Resend HTTP API
+ *
+ * @param {Object} options - Email options (email, subject, message, html).
+ * @param {string} fromAddress - The sender's email address.
+ * @param {string} fromName - The sender's display name.
+ * @returns {Promise<Object>} The response data from Resend API.
+ * @throws {Error} If the API request fails.
  */
 const sendViaResendAPI = async (options, fromAddress, fromName) => {
   const response = await fetch("https://api.resend.com/emails", {
@@ -69,10 +81,16 @@ const sendViaResendAPI = async (options, fromAddress, fromName) => {
 
 /**
  * Send email via SMTP (nodemailer) — local dev fallback
+ *
+ * @param {Object} options - Email options (email, subject, message, html).
+ * @param {string} fromAddress - The sender's email address.
+ * @param {string} fromName - The sender's display name.
+ * @returns {Promise<Object>} The response info from Nodemailer.
  */
 const sendViaSMTP = async (options, fromAddress, fromName) => {
   let transporter;
 
+  // Use configured SMTP credentials if provided in the environment
   if (process.env.SMTP_HOST && process.env.SMTP_USER) {
     transporter = nodemailer.createTransport({
       host: process.env.SMTP_HOST,
@@ -85,6 +103,7 @@ const sendViaSMTP = async (options, fromAddress, fromName) => {
       connectionTimeout: 10000,
     });
   } else {
+    // Fallback to Ethereal mock email for local development testing without real SMTP
     console.log("⚠️  No email provider configured. Using Ethereal mock email.");
     const testAccount = await nodemailer.createTestAccount();
     transporter = nodemailer.createTransport({
@@ -103,6 +122,7 @@ const sendViaSMTP = async (options, fromAddress, fromName) => {
     html: options.html,
   });
 
+  // Print the Ethereal catch-all preview URL if no real SMTP was used
   if (!process.env.SMTP_HOST) {
     console.log("📧 Ethereal Preview URL:", nodemailer.getTestMessageUrl(info));
   }
@@ -112,8 +132,13 @@ const sendViaSMTP = async (options, fromAddress, fromName) => {
 
 /**
  * Main email function — tries providers in order of priority
+ *
+ * @param {Object} options - Email options containing `email`, `subject`, `message`, and optionally `html`.
+ * @returns {Promise<Object>} The result of the successful email dispatch.
+ * @throws {Error} If all attempted email providers fail.
  */
 const sendEmail = async (options) => {
+  // Resolve sender credentials falling back from most preferred to a default dummy address
   const fromAddress = process.env.BREVO_FROM_EMAIL
     || process.env.RESEND_FROM_EMAIL
     || process.env.FROM_EMAIL

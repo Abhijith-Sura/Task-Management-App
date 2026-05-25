@@ -13,6 +13,15 @@ import { showToast } from '../../components/ui/Toast';
 import api from '../../services/api';
 import offlineSyncService from '../../services/offlineSync';
 
+/**
+ * Board Component
+ * The main kanban board view handling task visualization, offline sync, real-time collaboration, and filtering.
+ * 
+ * @param {Object} props - The component props.
+ * @param {string} props.boardId - The unique ID of the board.
+ * @param {Function} props.onViewChange - Callback to navigate back to the dashboard or other views.
+ * @returns {JSX.Element} The rendered board interface.
+ */
 export const Board = ({ boardId, onViewChange }) => {
   const [selectedTask, setSelectedTask] = useState(null);
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
@@ -89,6 +98,7 @@ export const Board = ({ boardId, onViewChange }) => {
   };
 
   // Fetch Faceted Analytics dynamically in background
+  // Debounced search to prevent excessive API calls while typing
   useEffect(() => {
     if (!boardId) return;
 
@@ -116,6 +126,7 @@ export const Board = ({ boardId, onViewChange }) => {
   }, [boardId, searchQuery, filterPriority, filterAssignee, filterTag]);
 
   // Offline network status and sync orchestrator
+  // Listens to browser events and processes the stashed mutation queue when reconnected
   useEffect(() => {
     const handleOnline = async () => {
       setIsOnline(true);
@@ -159,6 +170,7 @@ export const Board = ({ boardId, onViewChange }) => {
   }, [boardId]);
 
   // Extract unique board labels dynamically
+  // Parses all labels from the nested board->lists->cards structure for the filter dropdown
   const allBoardLabels = useMemo(() => {
     if (!board?.lists) return [];
     const labelsMap = new Map();

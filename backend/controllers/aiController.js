@@ -7,8 +7,13 @@ import { successResponse, errorResponse } from "../utils/apiResponse.js";
 import { broadcastToBoard } from "../sockets/socketHandler.js";
 
 /**
- * @desc    Generate checklist items for card automatically via AI
+ * Generates checklist items for a card automatically using AI.
+ * Automates task breakdown, updates the card, logs the activity, and broadcasts changes in real-time.
+ * 
  * @route   POST /api/ai/generate-subtasks
+ * @param {import("express").Request} req - The Express request object containing `cardId` in the body.
+ * @param {import("express").Response} res - The Express response object.
+ * @returns {Promise<void>} Sends a success response with the populated card or an error response.
  */
 export const generateSubtasks = asyncHandler(async (req, res) => {
   const { cardId } = req.body;
@@ -16,13 +21,14 @@ export const generateSubtasks = asyncHandler(async (req, res) => {
     return errorResponse(res, "Card ID is required", 400);
   }
 
+  // Delegate the generation of subtask strings to the AI service
   const subtaskStrings = await aiService.generateSubtasks(cardId);
   const card = await Card.findById(cardId);
   if (!card) {
     return errorResponse(res, "Card not found", 404);
   }
 
-  // Push new subtasks to checklist array
+  // Format the raw AI output strings into structured checklist items
   const formattedItems = subtaskStrings.map(text => ({
     text,
     completed: false
@@ -31,17 +37,17 @@ export const generateSubtasks = asyncHandler(async (req, res) => {
   card.checklists.push(...formattedItems);
   await card.save();
 
-  // Populate card details
+  // Populate related card fields to return a comprehensive response
   const populatedCard = await Card.findById(cardId)
     .populate("assignees", "name avatar")
     .populate("listId", "title");
 
-  // Retrieve boardId for activity logging and socket broadcasts
+  // Retrieve boardId for activity logging and targeted socket broadcasts
   const list = await List.findById(card.listId).select("boardId").lean();
   const boardId = list?.boardId;
 
   if (boardId) {
-    // Log dynamic activity
+    // Record this automation event in the board's activity log
     await Activity.create({
       action: `✨ AI Autopilot generated ${formattedItems.length} checklist items for "${card.title}"`,
       type: "AUTOMATION",
@@ -50,7 +56,7 @@ export const generateSubtasks = asyncHandler(async (req, res) => {
       user: req.user?.id
     });
 
-    // Notify other viewers immediately in real-time
+    // Notify other viewers immediately to keep the board state synchronized across clients
     broadcastToBoard(boardId, "update-card", populatedCard);
     broadcastToBoard(boardId, "board-refresh", { boardId });
   }
@@ -59,8 +65,13 @@ export const generateSubtasks = asyncHandler(async (req, res) => {
 });
 
 /**
- * @desc    Summarize comment thread discussion via AI
+ * Summarizes the comment thread discussion on a specific card using AI.
+ * Condenses lengthy conversations into a concise overview for quick reading.
+ * 
  * @route   POST /api/ai/summarize-discussion
+ * @param {import("express").Request} req - The Express request object containing `cardId` in the body.
+ * @param {import("express").Response} res - The Express response object.
+ * @returns {Promise<void>} Sends a success response with the generated discussion summary.
  */
 export const summarizeDiscussion = asyncHandler(async (req, res) => {
   const { cardId } = req.body;

@@ -1,3 +1,7 @@
+/**
+ * @fileoverview Main App component coordinating global state, routing,
+ * layout (sidebar, command palette, notifications), and layout configuration.
+ */
 import { useState, useEffect, useCallback } from 'react';
 import { AppShell } from './layouts/AppShell';
 import { Board } from './features/canvas/Board';
@@ -23,6 +27,23 @@ import { socketService } from './services/socket';
 import { motion, AnimatePresence } from 'framer-motion';
 import zenithLogo from './assets/zenith_logo.png';
 
+/**
+ * Renders the application sidebar with workspace branding, navigation links,
+ * available boards, and user profile summary.
+ *
+ * @param {Object} props - Component properties.
+ * @param {Array} props.boards - List of available boards.
+ * @param {Function} props.onBoardSelect - Callback when a board is selected.
+ * @param {string|null} props.activeBoardId - ID of the currently active board.
+ * @param {string} props.currentView - The current active view/route.
+ * @param {Function} props.onViewChange - Callback to change the active view.
+ * @param {number} props.unreadCount - Number of unread notifications.
+ * @param {boolean} props.isNotifOpen - Notification hub visibility state.
+ * @param {Function} props.setIsNotifOpen - State setter for notification hub visibility.
+ * @param {string} props.role - User's role in the current workspace.
+ * @param {Object} props.user - The current user data.
+ * @returns {JSX.Element} The rendered Sidebar component.
+ */
 const Sidebar = ({ boards, onBoardSelect, activeBoardId, currentView, onViewChange, unreadCount, isNotifOpen, setIsNotifOpen, role, user: propUser }) => {
   const localUser = JSON.parse(localStorage.getItem('user') || '{}');
   const user = propUser || localUser;
@@ -157,6 +178,16 @@ const Sidebar = ({ boards, onBoardSelect, activeBoardId, currentView, onViewChan
   );
 };
 
+/**
+ * A reusable navigation item for the sidebar.
+ *
+ * @param {Object} props - Component properties.
+ * @param {React.ReactNode} props.icon - The icon to display.
+ * @param {string} props.label - The text label for the item.
+ * @param {boolean} props.active - Whether this item represents the active view.
+ * @param {Function} props.onClick - Callback executed when the item is clicked.
+ * @returns {JSX.Element} The rendered SidebarItem component.
+ */
 const SidebarItem = ({ icon, label, active, onClick }) => (
   <motion.div 
     whileHover={{ x: 4 }}
@@ -180,18 +211,32 @@ const SidebarItem = ({ icon, label, active, onClick }) => (
   </motion.div>
 );
 
+/**
+ * The root Application component.
+ * Handles authentication state, global views, real-time WebSocket updates,
+ * and high-level routing logic between different application features.
+ *
+ * @returns {JSX.Element} The rendered App component.
+ */
 function App() {
+  // Authentication and routing state
   const [isAuth, setIsAuth] = useState(isAuthenticated());
   const [isLanding, setIsLanding] = useState(!isAuthenticated());
   const [isDemo, setIsDemo] = useState(false);
+  
+  // View states for authentication flows
   const [isAuthView, setIsAuthView] = useState(false);
   const [authInitialView, setAuthInitialView] = useState('login');
   const [authResetToken, setAuthResetToken] = useState(null);
   
+  // Workspace and navigation state
   const [activeBoardId, setActiveBoardId] = useState(null);
   const [currentView, setCurrentView] = useState('board');
+  
+  // Notification tracking and persistence
   const [notifications, setNotifications] = useState([]);
   const [lastReadTime, setLastReadTime] = useState(() => {
+    // Read the user-specific notification timestamp from local storage to persist read state across sessions
     const localUser = JSON.parse(localStorage.getItem('user') || '{}');
     const key = localUser._id ? `zenith_notifications_last_read_${localUser._id}` : 'zenith_notifications_last_read';
     const saved = localStorage.getItem(key);
@@ -288,8 +333,9 @@ function App() {
   }, [queryClient]);
 
   // URL Interception for board invite tokens and password reset
+  // Runs once on mount to handle special application entry routes
   useEffect(() => {
-    // 0. Check password reset links
+    // 0. Check for password reset links in the URL path
     const resetPasswordMatch = window.location.pathname.match(/\/reset-password\/([a-zA-Z0-9]+)/);
     if (resetPasswordMatch) {
       const token = resetPasswordMatch[1];
@@ -300,13 +346,14 @@ function App() {
       return;
     }
 
-    // 1. Check individual invitation links first
+    // 1. Check for single-use or individual gated invitation links
     const individualMatch = window.location.pathname.match(/\/b\/invite\/individual\/([a-zA-Z0-9]+)/);
     if (individualMatch) {
       const token = individualMatch[1];
       if (isAuth) {
         handleJoinViaToken(token, true);
       } else {
+        // Defer joining until after the user authenticates
         sessionStorage.setItem('pendingInviteToken', token);
         sessionStorage.setItem('pendingInviteIsIndividual', 'true');
         setIsAuthView(true);
@@ -315,13 +362,14 @@ function App() {
       return;
     }
 
-    // 2. Check global shareable invite links
+    // 2. Check for public global shareable invite links
     const globalMatch = window.location.pathname.match(/\/b\/invite\/([a-zA-Z0-9]+)/);
     if (globalMatch) {
       const token = globalMatch[1];
       if (isAuth) {
         handleJoinViaToken(token, false);
       } else {
+        // Defer joining until after the user authenticates
         sessionStorage.setItem('pendingInviteToken', token);
         sessionStorage.setItem('pendingInviteIsIndividual', 'false');
         setIsAuthView(true);

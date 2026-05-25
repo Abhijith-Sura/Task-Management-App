@@ -3,11 +3,36 @@ import { MoreHorizontal, Plus } from 'lucide-react';
 import { motion, LayoutGroup } from 'framer-motion';
 import { Card } from './Card';
 
+/**
+ * Column Component
+ * Represents a single list or column in the Kanban board.
+ * Holds multiple draggable task cards and allows adding new tasks.
+ * 
+ * @param {Object} props - The component props.
+ * @param {Object} props.column - The column data (id, title).
+ * @param {Array} props.cards - The task cards belonging to this column.
+ * @param {Function} props.onCardSelect - Callback when a card is selected.
+ * @param {string|null} props.activeCardId - ID of the currently active/dragged card.
+ * @param {Function} props.onDragStart - Callback for when a drag initiates.
+ * @param {Function} props.onDragEnd - Callback for when a drag completes.
+ * @param {Function} props.onAddCard - Callback to create a new task in this column.
+ * @param {Function} props.onUpdateList - Callback to update the column details (e.g., rename).
+ * @param {Function} props.onDeleteList - Callback to delete this column.
+ * @param {boolean} props.isViewer - Indicates if the user has view-only permissions.
+ * @returns {JSX.Element} The rendered column.
+ */
 export const Column = ({ column, cards, onCardSelect, activeCardId, onDragStart, onDragEnd, onAddCard, onUpdateList, onDeleteList, isViewer }) => {
+  // State for toggling the inline "Add Card" input form
   const [isAdding, setIsAdding] = React.useState(false);
   const [newCardTitle, setNewCardTitle] = React.useState('');
+  
+  // State for toggling the column options dropdown menu (rename, delete)
   const [isMenuOpen, setIsMenuOpen] = React.useState(false);
 
+  /**
+   * Handles the submission of the new card form.
+   * @param {Event} e - The form submission event.
+   */
   const handleAddSubmit = (e) => {
     e.preventDefault();
     if (newCardTitle.trim()) {

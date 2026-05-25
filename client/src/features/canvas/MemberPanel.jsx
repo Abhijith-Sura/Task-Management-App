@@ -8,6 +8,19 @@ const roleConfig = {
   viewer: { label: 'Viewer', color: 'text-slate-400', bg: 'bg-white/[0.04] border-white/[0.08]' },
 };
 
+/**
+ * MemberPanel Component
+ * Displays a popup panel listing all members in a board/workspace.
+ * Allows board owners to manage member roles or remove members.
+ * 
+ * @param {Object} props - The component props.
+ * @param {Array} props.members - List of normal members.
+ * @param {Object} props.owner - The owner object.
+ * @param {boolean} props.isOwner - Indicates if the current user is the owner.
+ * @param {Function} props.onRemoveMember - Callback to remove a member.
+ * @param {Function} props.onClose - Callback to close the panel.
+ * @returns {JSX.Element} The rendered member panel.
+ */
 export const MemberPanel = ({ members, owner, isOwner, onRemoveMember, onClose }) => {
   const panelRef = useRef(null);
 
@@ -26,7 +39,8 @@ export const MemberPanel = ({ members, owner, isOwner, onRemoveMember, onClose }
     return () => clearTimeout(timer);
   }, [onClose]);
 
-  // Build deduplicated member list: owner first, then board members
+  // Build deduplicated member list: prioritize owner first, then add board members
+  // Using a Set 'seen' to ensure unique IDs
   const allMembers = [];
   const seen = new Set();
 

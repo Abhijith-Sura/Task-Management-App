@@ -2,6 +2,13 @@ import React, { useMemo } from 'react';
 import { Calendar, ChevronLeft, ChevronRight, Users, Clock, AlertTriangle, Plus, Star } from 'lucide-react';
 import { motion } from 'framer-motion';
 
+/**
+ * Safely parses a date input and normalizes it to prevent timezone shift issues,
+ * especially for UTC midnight strings.
+ * 
+ * @param {string|Date} dateInput - The date to parse.
+ * @returns {Date} A localized Date object.
+ */
 const parseUtcSafe = (dateInput) => {
   if (!dateInput) return new Date();
   const dateStr = typeof dateInput === 'string' ? dateInput : new Date(dateInput).toISOString();
@@ -14,6 +21,17 @@ const parseUtcSafe = (dateInput) => {
   return new Date(dateInput);
 };
 
+/**
+ * TimelineView Component
+ * Renders a Gantt-style timeline for scheduling and visualizing tasks across a 14-day sprint.
+ * 
+ * @param {Object} props - The component props.
+ * @param {Array} props.lists - The lists containing cards.
+ * @param {Function} props.onCardSelect - Callback when a card is selected.
+ * @param {Function} props.onUpdateCard - Callback to update card details (e.g., rescheduling).
+ * @param {boolean} props.isViewer - Indicates if the user is in view-only mode.
+ * @returns {JSX.Element} The rendered timeline view.
+ */
 export const TimelineView = ({ lists, onCardSelect, onUpdateCard, isViewer }) => {
   // Generate 14-day scheduling window starting from today
   const timelineDays = useMemo(() => {
@@ -49,7 +67,14 @@ export const TimelineView = ({ lists, onCardSelect, onUpdateCard, isViewer }) =>
     return cards;
   }, [lists]);
 
-  // Dynamic reschedule: Shifts start date or extends due date
+  /**
+   * Reschedules a card by shifting its start date or extending its due date.
+   * Ensures logical constraint: Start Date <= Due Date.
+   * 
+   * @param {Object} card - The card to reschedule.
+   * @param {number} shiftStartDays - Number of days to shift the start date.
+   * @param {number} extendDueDays - Number of days to extend the due date.
+   */
   const handleReschedule = (card, shiftStartDays, extendDueDays) => {
     if (isViewer) return;
 
@@ -84,7 +109,11 @@ export const TimelineView = ({ lists, onCardSelect, onUpdateCard, isViewer }) =>
     });
   };
 
-  // Quick schedule: Sets start date to today and due date to 3 days from now
+  /**
+   * Quickly schedules an unscheduled task: Sets start date to today, due date to 3 days from now.
+   * 
+   * @param {Object} card - The card to schedule.
+   */
   const handleQuickSchedule = (card) => {
     if (isViewer) return;
     const today = new Date();

@@ -31,6 +31,17 @@ const BOARD_TEMPLATES = [
   }
 ];
 
+/**
+ * WorkspaceHub Component
+ * The main dashboard for managing workspaces and their respective boards.
+ * Handles board creation (from templates or blank), workspace management, and routing to specific boards.
+ * 
+ * @param {Object} props - The component props.
+ * @param {Function} props.onBoardSelect - Callback invoked when a board is selected.
+ * @param {Function} props.onViewChange - Callback to navigate to a different view (e.g., 'board').
+ * @param {Function} props.onCreateBoard - Callback to handle creating a new board.
+ * @returns {JSX.Element} The rendered workspace hub dashboard.
+ */
 export const WorkspaceHub = ({ onBoardSelect, onViewChange, onCreateBoard }) => {
   const queryClient = useQueryClient();
   const currentUser = JSON.parse(localStorage.getItem('user') || '{}');
@@ -111,6 +122,8 @@ export const WorkspaceHub = ({ onBoardSelect, onViewChange, onCreateBoard }) => 
   const workspaces = workspacesResponse?.data || [];
   const boards = boardsResponse?.data || [];
 
+  // Group boards by their respective workspace and further group by categories
+  // Calculates total boards for each workspace for display metrics
   const groupedWorkspaces = useMemo(() => {
     return workspaces.map(ws => {
       const wsBoards = boards.filter(b => (b.workspaceId?._id || b.workspaceId) === ws._id);

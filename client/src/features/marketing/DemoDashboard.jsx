@@ -2,6 +2,12 @@ import React from 'react';
 import { BarChart3, Clock, Layout, CheckCircle2, TrendingUp, Zap, Activity, Calendar, ShieldCheck } from 'lucide-react';
 import { motion } from 'framer-motion';
 
+/**
+ * A static dashboard component used for marketing and demonstrations.
+ * Showcases the visual style and potential data visualizations of the application.
+ *
+ * @returns {React.ReactElement} The rendered Demo Dashboard view
+ */
 export const DemoDashboard = () => {
   // Static Demo Data
   const stats = [
@@ -17,6 +23,12 @@ export const DemoDashboard = () => {
     date: `2024-05-${i + 1}`
   }));
 
+  /**
+   * Determines the tailwind class for heatmap cell intensity based on a level (0-4).
+   * 
+   * @param {number} level - The intensity level (0 to 4)
+   * @returns {string} The corresponding tailwind class string for styling
+   */
   const getIntensityColor = (level) => {
     switch (level) {
       case 0: return 'bg-white/[0.02] border-white/[0.05]';

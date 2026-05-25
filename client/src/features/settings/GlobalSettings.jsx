@@ -5,8 +5,16 @@ import api from '../../services/api';
 import { logout } from '../auth/AuthService';
 import { motion, AnimatePresence } from 'framer-motion';
 
+/**
+ * Provides a global settings interface for managing user profiles, 
+ * security credentials, UI preferences, and activity logs.
+ * 
+ * @component
+ * @returns {JSX.Element} The rendered GlobalSettings component.
+ */
 export const GlobalSettings = () => {
   const queryClient = useQueryClient();
+  // Retrieve basic user info from local storage
   const localUser = JSON.parse(localStorage.getItem('user')) || { name: 'User', email: 'user@example.com' };
   
   const [activeTab, setActiveTab] = useState('profile');
@@ -48,7 +56,7 @@ export const GlobalSettings = () => {
   const stats = profileData.stats || { totalTasks: 0, highPriorityTasks: 0 };
   const joinedAt = profileData.joinedAt || userData.createdAt || new Date();
 
-  // Sync server data to form once loaded
+  // Sync server profile data into local form state once loaded
   useEffect(() => {
     if (userData.name || userData.email || userData.avatar) {
       setFormData({
@@ -70,6 +78,7 @@ export const GlobalSettings = () => {
   });
   const activities = activityResponse?.data || [];
 
+  // Mutation for updating user profile information
   const updateProfileMutation = useMutation({
     mutationFn: async (updates) => {
       const { data } = await api.put('/users/profile', updates);
@@ -111,6 +120,9 @@ export const GlobalSettings = () => {
     }
   });
 
+  /**
+   * Handles the submission of profile details updates.
+   */
   const handleSaveProfile = () => {
     if (!formData.name.trim()) {
       setErrorMsg('Full name cannot be blank.');
@@ -120,6 +132,11 @@ export const GlobalSettings = () => {
     updateProfileMutation.mutate(formData);
   };
 
+  /**
+   * Handles the password change form submission.
+   * 
+   * @param {React.FormEvent} e - The form submission event.
+   */
   const handleSavePassword = (e) => {
     e.preventDefault();
     if (newPassword.length < 6) {

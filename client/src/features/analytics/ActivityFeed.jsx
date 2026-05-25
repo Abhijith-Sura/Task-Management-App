@@ -4,7 +4,14 @@ import api from '../../services/api';
 import { Terminal, Activity, Clock, User, Box, ArrowRight } from 'lucide-react';
 import { motion } from 'framer-motion';
 
+/**
+ * Renders a real-time activity feed displaying system logs and user events.
+ * 
+ * @component
+ * @returns {JSX.Element} The rendered ActivityFeed component.
+ */
 export const ActivityFeed = () => {
+  // Fetch global activity logs from the API
   const { data: activityResponse, isLoading } = useQuery({
     queryKey: ['global-activity'],
     queryFn: async () => {
@@ -13,6 +20,7 @@ export const ActivityFeed = () => {
     }
   });
 
+  // Fallback to empty array if no activities are returned
   const activities = activityResponse?.data || [];
 
   if (isLoading) return <div className="p-10 font-mono text-accent-blue animate-pulse">Loading activities...</div>;

@@ -1,13 +1,31 @@
+/**
+ * @fileoverview AppShell component that provides the foundational layout structure
+ * for the application, including the sidebar, main content area, and mobile navigation.
+ */
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { SpaceBackground } from '../components/ui/SpaceBackground';
 import { Menu, X } from 'lucide-react';
 
+/**
+ * AppShell acts as the global wrapper for the application's UI.
+ * It manages the responsive layout, handling the mobile sidebar toggle,
+ * background rendering, and the slide-in drawer.
+ *
+ * @param {Object} props - Component properties.
+ * @param {React.ReactNode} props.children - The main content to render within the shell.
+ * @param {React.ReactNode} props.sidebar - The sidebar component to render.
+ * @param {React.ReactNode} props.drawer - The optional slide-in drawer component.
+ * @param {boolean} props.isDrawerOpen - Controls the visibility of the drawer.
+ * @returns {JSX.Element} The rendered application shell.
+ */
 export const AppShell = ({ children, sidebar, drawer, isDrawerOpen }) => {
+  // Manages the state of the sidebar for mobile views
   const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false);
 
   return (
     <div className="relative h-screen w-screen overflow-hidden bg-transparent">
+      {/* Global cosmic background effect */}
       <SpaceBackground />
 
       {/* Mobile top bar - only visible on small screens */}

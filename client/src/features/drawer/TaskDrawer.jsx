@@ -10,6 +10,13 @@ import { DescriptionEditor } from './DescriptionEditor';
 import { socketService } from '../../services/socket';
 import api from '../../services/api';
 
+/**
+ * Formats a given date input into a local YYYY-MM-DD string.
+ * Handles UTC midnight dates properly to avoid timezone offset issues.
+ *
+ * @param {string|Date} dateInput - The date to format.
+ * @returns {string} The formatted local date string.
+ */
 const formatLocalDate = (dateInput) => {
   if (!dateInput) return '';
   const dateStr = typeof dateInput === 'string' ? dateInput : new Date(dateInput).toISOString();
@@ -31,6 +38,26 @@ const formatLocalDate = (dateInput) => {
   }
 };
 
+/**
+ * TaskDrawer Component
+ * 
+ * A comprehensive side drawer displaying detailed information about a specific task/card.
+ * Includes sections for overview, discussion, activity, checklist, labels, assignees, and AI autopilot features.
+ *
+ * @component
+ * @param {Object} props - The component props.
+ * @param {Object} props.task - The task/card data object.
+ * @param {Function} props.onClose - Callback function triggered to close the drawer.
+ * @param {string} props.activeBoardId - The ID of the active board containing this task.
+ * @param {Array<Object>} [props.members=[]] - Array of all board members available for assignment.
+ * @param {Array<Object>} [props.boardLabels=[]] - Array of all available labels for the board.
+ * @param {Function} props.onUpdateCard - Callback function triggered to update card properties.
+ * @param {Function} props.onDeleteCard - Callback function triggered to delete the card.
+ * @param {Function} props.onUploadAttachment - Callback function triggered to upload a file attachment.
+ * @param {Function} props.onAddComment - Callback function triggered to add a comment to the task.
+ * @param {boolean} props.isViewer - Indicates if the user is in view-only mode.
+ * @returns {React.ReactElement} The rendered TaskDrawer component.
+ */
 export const TaskDrawer = ({ task, onClose, activeBoardId, members = [], boardLabels = [], onUpdateCard, onDeleteCard, onUploadAttachment, onAddComment, isViewer }) => {
   const [activeTab, setActiveTab] = useState('details');
   const [isAssigneeOpen, setIsAssigneeOpen] = useState(false);

@@ -4,7 +4,15 @@ import { useQuery } from '@tanstack/react-query';
 import api from '../../services/api';
 import { motion } from 'framer-motion';
 
+/**
+ * Renders the main analytics dashboard for the workspace.
+ * Displays metrics such as active boards, completion rates, and an activity heatmap.
+ * 
+ * @component
+ * @returns {JSX.Element} The rendered Dashboard component.
+ */
 export const Dashboard = () => {
+  // Fetch all boards to calculate completion metrics
   const { data: boardsResponse } = useQuery({
     queryKey: ['boards'],
     queryFn: async () => {
@@ -23,6 +31,7 @@ export const Dashboard = () => {
 
   const boards = boardsResponse?.data || [];
 
+  // Calculate total and completed cards across all boards
   const { totalCards, completedCards } = React.useMemo(() => {
     let t = 0;
     let c = 0;
@@ -53,8 +62,9 @@ export const Dashboard = () => {
   // Productivity Heatmap Logic (Reflecting real activity density)
   const activities = activityResponse?.data || [];
   
+  // Generate a 28-day activity matrix for the heatmap
   const heatmapCells = React.useMemo(() => {
-    // Generate last 28 days
+    // Initialize the last 28 days
     const days = [];
     const today = new Date();
     today.setHours(0,0,0,0);
@@ -334,6 +344,14 @@ export const Dashboard = () => {
   );
 };
 
+/**
+ * A decorative shield icon component.
+ * 
+ * @param {Object} props - The component props.
+ * @param {number} props.size - The size of the icon.
+ * @param {string} props.className - Additional CSS classes.
+ * @returns {JSX.Element} The rendered shield icon.
+ */
 const ShieldIcon = ({ size, className }) => (
   <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className={className}>
     <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
