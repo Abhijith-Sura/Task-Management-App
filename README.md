@@ -71,7 +71,7 @@ To prevent unverified accounts from cluttering the system, Zenith utilizes a two
 - **Self-Healing Re-Registration**: If a user attempts to sign up again with the same email but has not yet completed verification, the system does not fail. Instead, it generates a fresh OTP, resets the expiration timer, sends a new email, and instructs the client to redirect to the verification screen.
 - **Stage 2 (Verification)**: The user enters the 6-digit code. The server verifies it against the database and checks that it has not expired. Upon success, the account is marked verified (`isVerified: true`), the OTP field is wiped, and a JSON Web Token (JWT) is returned to establish the session.
 
-```mermaid
+```# mermaid
 sequenceDiagram
     autonumber
     actor User as Client Web Browser
