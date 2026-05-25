@@ -2,9 +2,11 @@ import React, { useState } from 'react';
 import { Login } from './Login';
 import { Register } from './Register';
 import { VerifyOtp } from './VerifyOtp';
+import { ForgotPassword } from './ForgotPassword';
+import { ResetPassword } from './ResetPassword';
 
-export const Auth = ({ onAuthSuccess }) => {
-  const [view, setView] = useState('login'); // 'login' | 'register' | 'verify'
+export const Auth = ({ onAuthSuccess, initialView = 'login', resetToken = null }) => {
+  const [view, setView] = useState(initialView); // 'login' | 'register' | 'verify' | 'forgot-password' | 'reset-password'
   const [email, setEmail] = useState('');
 
   const handleVerificationRequired = (targetEmail) => {
@@ -18,6 +20,7 @@ export const Auth = ({ onAuthSuccess }) => {
         onLoginSuccess={onAuthSuccess} 
         onSwitchToRegister={() => setView('register')} 
         onVerificationRequired={handleVerificationRequired}
+        onSwitchToForgotPassword={() => setView('forgot-password')}
       />
     );
   }
@@ -28,6 +31,21 @@ export const Auth = ({ onAuthSuccess }) => {
         email={email}
         onVerificationSuccess={onAuthSuccess}
         onSwitchToLogin={() => setView('login')}
+      />
+    );
+  }
+
+  if (view === 'forgot-password') {
+    return (
+      <ForgotPassword onSwitchToLogin={() => setView('login')} />
+    );
+  }
+
+  if (view === 'reset-password') {
+    return (
+      <ResetPassword 
+        token={resetToken} 
+        onSwitchToLogin={() => setView('login')} 
       />
     );
   }

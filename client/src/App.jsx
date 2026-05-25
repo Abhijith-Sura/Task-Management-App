@@ -185,6 +185,8 @@ function App() {
   const [isLanding, setIsLanding] = useState(!isAuthenticated());
   const [isDemo, setIsDemo] = useState(false);
   const [isAuthView, setIsAuthView] = useState(false);
+  const [authInitialView, setAuthInitialView] = useState('login');
+  const [authResetToken, setAuthResetToken] = useState(null);
   
   const [activeBoardId, setActiveBoardId] = useState(null);
   const [currentView, setCurrentView] = useState('board');
@@ -285,8 +287,19 @@ function App() {
     }
   }, [queryClient]);
 
-  // URL Interception for board invite tokens
+  // URL Interception for board invite tokens and password reset
   useEffect(() => {
+    // 0. Check password reset links
+    const resetPasswordMatch = window.location.pathname.match(/\/reset-password\/([a-zA-Z0-9]+)/);
+    if (resetPasswordMatch) {
+      const token = resetPasswordMatch[1];
+      setAuthResetToken(token);
+      setAuthInitialView('reset-password');
+      setIsAuthView(true);
+      setIsLanding(true);
+      return;
+    }
+
     // 1. Check individual invitation links first
     const individualMatch = window.location.pathname.match(/\/b\/invite\/individual\/([a-zA-Z0-9]+)/);
     if (individualMatch) {
@@ -423,7 +436,10 @@ function App() {
   // Landing Page Logic
   if (isLanding && !isDemo) {
     if (isAuthView) {
-      return <Auth onAuthSuccess={() => {
+      return <Auth 
+        initialView={authInitialView}
+        resetToken={authResetToken}
+        onAuthSuccess={() => {
         setIsAuth(true);
         setIsLanding(false);
         setIsAuthView(false);

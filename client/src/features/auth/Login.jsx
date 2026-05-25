@@ -4,7 +4,7 @@ import { Terminal, ShieldAlert, Loader2 } from 'lucide-react';
 import bgControl from '../../assets/bg-control.png';
 import zenithLogo from '../../assets/zenith_logo.png';
 
-export const Login = ({ onLoginSuccess, onSwitchToRegister, onVerificationRequired }) => {
+export const Login = ({ onLoginSuccess, onSwitchToRegister, onVerificationRequired, onSwitchToForgotPassword }) => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState(null);
@@ -60,7 +60,16 @@ export const Login = ({ onLoginSuccess, onSwitchToRegister, onVerificationRequir
           </div>
 
           <div className="space-y-2">
-            <label className="block font-mono text-[0.65rem] text-slate-400 uppercase tracking-widest">Password</label>
+            <div className="flex justify-between items-center">
+              <label className="block font-mono text-[0.65rem] text-slate-400 uppercase tracking-widest">Password</label>
+              <button 
+                type="button"
+                onClick={onSwitchToForgotPassword}
+                className="text-accent-blue font-mono text-[0.6rem] uppercase tracking-widest hover:underline"
+              >
+                Forgot Password?
+              </button>
+            </div>
             <input 
               type="password" 
               required
