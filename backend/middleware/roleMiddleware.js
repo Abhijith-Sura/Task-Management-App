@@ -107,17 +107,32 @@ export const requireRole = (allowedRoles) => async (req, res, next) => {
     }
 
     // Find user role in workspace members list
+    let userRole = null;
     const member = workspace.members.find(m => m.user && m.user.toString() === req.user.id.toString());
-    if (!member) {
-      return res.status(403).json({ success: false, message: "Access Denied: You are not a member of this workspace" });
+    
+    if (member) {
+      userRole = member.role;
+    } else {
+      // Fallback: check if they are a direct board member
+      const targetBoardId = req.params.boardId || (req.originalUrl.includes("/api/boards") ? req.params.id : null);
+      if (targetBoardId) {
+        const board = await Board.findById(targetBoardId).lean();
+        if (board && board.members.some(m => m.toString() === req.user.id.toString())) {
+          userRole = "editor"; // Default role for direct board members
+        }
+      }
     }
 
-    req.user.workspaceRole = member.role;
+    if (!userRole) {
+      return res.status(403).json({ success: false, message: "Access Denied: You are not a member of this workspace or board" });
+    }
 
-    if (!allowedRoles.includes(member.role)) {
+    req.user.workspaceRole = userRole;
+
+    if (!allowedRoles.includes(userRole)) {
       return res.status(403).json({ 
         success: false, 
-        message: `Access Denied: Action requires ${allowedRoles.join(" or ")} role. Your role is ${member.role}.` 
+        message: `Access Denied: Action requires ${allowedRoles.join(" or ")} role. Your role is ${userRole}.` 
       });
     }
 

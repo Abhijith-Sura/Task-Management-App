@@ -96,9 +96,6 @@ class BoardService {
           position: i * 1000
         });
 
-        // Add to board.lists list array
-        board.lists.push(newList._id);
-
         // Pre-populate cards for this list
         if (listData.cards && listData.cards.length > 0) {
           for (let j = 0; j < listData.cards.length; j++) {
@@ -135,14 +132,9 @@ class BoardService {
               labels: cardData.labels || [],
               checklists: flatChecklists
             });
-
-            // Add to list.cards array
-            newList.cards.push(newCard._id);
           }
-          await newList.save();
         }
       }
-      await board.save();
     }
 
     // 4. Register custom default automations for this board

@@ -93,6 +93,7 @@ export const Register = ({ onRegisterSuccess, onSwitchToLogin, onVerificationReq
               required
               value={password}
               onChange={(e) => setPassword(e.target.value)}
+              autoComplete="new-password"
               className="w-full bg-white/[0.03] hover:bg-white/[0.05] border border-white/[0.12] px-4 py-3 text-sm font-mono text-[#FAFAFA] rounded-sm focus:outline-none focus:border-accent-blue transition-all"
               placeholder="••••••••"
             />
