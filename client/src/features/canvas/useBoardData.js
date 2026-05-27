@@ -238,6 +238,7 @@ export const useBoardData = (boardId) => {
     },
     onSettled: () => {
       queryClient.invalidateQueries({ queryKey: ['board', boardId] });
+      socketService.emitBoardMutation({ boardId });
     },
   });
 
@@ -249,6 +250,7 @@ export const useBoardData = (boardId) => {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['board', boardId] });
+      socketService.emitBoardMutation({ boardId });
     },
   });
 
@@ -260,6 +262,7 @@ export const useBoardData = (boardId) => {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['board', boardId] });
+      socketService.emitBoardMutation({ boardId });
     },
   });
 
@@ -271,6 +274,7 @@ export const useBoardData = (boardId) => {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['board', boardId] });
+      socketService.emitBoardMutation({ boardId });
     },
   });
 
@@ -313,6 +317,7 @@ export const useBoardData = (boardId) => {
     },
     onSettled: () => {
       queryClient.invalidateQueries({ queryKey: ['board', boardId] });
+      socketService.emitBoardMutation({ boardId });
     },
   });
 
@@ -349,6 +354,7 @@ export const useBoardData = (boardId) => {
           }
         };
       });
+      socketService.emitBoardMutation({ boardId });
     },
   });
 
@@ -397,6 +403,7 @@ export const useBoardData = (boardId) => {
     onSettled: (data, error, variables) => {
       queryClient.invalidateQueries({ queryKey: ['comments', variables.cardId] });
       queryClient.invalidateQueries({ queryKey: ['board', boardId] });
+      socketService.emitBoardMutation({ boardId });
     },
   });
 
@@ -408,6 +415,7 @@ export const useBoardData = (boardId) => {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['board', boardId] });
+      socketService.emitBoardMutation({ boardId });
     },
   });
 
@@ -419,6 +427,7 @@ export const useBoardData = (boardId) => {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['board', boardId] });
+      socketService.emitBoardMutation({ boardId });
     },
   });
 
@@ -430,6 +439,7 @@ export const useBoardData = (boardId) => {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['board', boardId] });
+      socketService.emitBoardMutation({ boardId });
     },
   });
 
@@ -441,6 +451,7 @@ export const useBoardData = (boardId) => {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['board-invitations', boardId] });
+      socketService.emitBoardMutation({ boardId });
     }
   });
 
@@ -451,6 +462,7 @@ export const useBoardData = (boardId) => {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['board-invitations', boardId] });
+      socketService.emitBoardMutation({ boardId });
     }
   });
 
@@ -461,6 +473,7 @@ export const useBoardData = (boardId) => {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['board-invitations', boardId] });
+      socketService.emitBoardMutation({ boardId });
     }
   });
 
@@ -483,6 +496,7 @@ export const useBoardData = (boardId) => {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['board-automations', boardId] });
+      socketService.emitBoardMutation({ boardId });
     }
   });
 
@@ -493,6 +507,7 @@ export const useBoardData = (boardId) => {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['board-automations', boardId] });
+      socketService.emitBoardMutation({ boardId });
     }
   });
 
@@ -503,6 +518,7 @@ export const useBoardData = (boardId) => {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['board-automations', boardId] });
+      socketService.emitBoardMutation({ boardId });
     }
   });
 

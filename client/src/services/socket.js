@@ -129,6 +129,17 @@ class SocketService {
   }
 
   /**
+   * Emits an event indicating a board mutation (create, update, delete) has occurred.
+   * 
+   * @param {Object} data - Information about the board mutation.
+   */
+  emitBoardMutation(data) {
+    if (this.socket) {
+      this.socket.emit('board-mutation', data);
+    }
+  }
+
+  /**
    * Subscribes to real-time updates for a specific card.
    * Ensures only one listener is active at a time to prevent duplicate events.
    * 
